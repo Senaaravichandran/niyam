@@ -30,3 +30,9 @@ coverage/
 claude_convo.md
 implementation.md
 niyam_architecture*.svg
+
+# original downloads (optimised copies live in public/media)
+assets/
+
+# browser test artefacts
+.playwright-mcp/
