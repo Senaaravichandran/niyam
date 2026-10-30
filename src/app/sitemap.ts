@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://niyam-ivory.vercel.app").replace(/\/$/, "");
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://niyam-virtusa.vercel.app").replace(/\/$/, "");
 
 const ROUTES: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },

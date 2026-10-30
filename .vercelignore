@@ -1,0 +1,9 @@
+submission/
+*.pptx
+*.pdf
+claude_convo.md
+implementation.md
+assets/
+.taste-skill/
+.playwright-mcp/
+tests/

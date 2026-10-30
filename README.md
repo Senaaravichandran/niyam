@@ -4,7 +4,7 @@
 
 Team Dragorithm · Sri Manakula Vinayagar Engineering College, Puducherry · Virtusa Jatayu Season 5, FDS NA Use Case 2: *Regulatory Circular to Live Rule Engine*.
 
-**Live:** https://niyam-ivory.vercel.app · **Submission pack:** [`submission/`](submission/) (deck, deck as PDF, explainer video, architecture, research write-up `niyam.html`)
+**Live:** https://niyam-virtusa.vercel.app · **Submission pack:** [`submission/`](submission/) (deck, deck as PDF, explainer video, architecture, research write-up `niyam.html`)
 
 ![NIYAM architecture: seven A2A agents, seven MCP servers, knowledge and data layer](submission/NIYAM_Architecture.png)
 
