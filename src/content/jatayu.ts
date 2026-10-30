@@ -355,3 +355,32 @@ export const VIRTUSA_FIT: [string, string][] = [
     "Draft branches, diffs, signed approvals and a clause-level audit trail are artefacts a delivery team can review with the client's compliance and IT owners, engagement by engagement.",
   ],
 ];
+
+/**
+ * The Stage 1 submission proposed ten agent roles. The build runs seven agents: some roles are
+ * combined, and the Sentinel became a tool rather than an agent. Stated openly for judges.
+ */
+export const ROLES: { proposed: string; built: string; note: string }[] = [
+  { proposed: "0 · Conductor", built: "Conductor", note: "Same role: plans the run, finds agents by Agent Card skills, caps objection rounds, stops at the human gate." },
+  { proposed: "1 · Circular Intake", built: "Reader", note: "Intake and applicability are one agent: it segments the circular and scopes each clause in the same pass." },
+  { proposed: "2 · Applicability", built: "Reader", note: "Merged with intake (see above)." },
+  { proposed: "3 · Obligation Extractor", built: "Extractor", note: "Same role. Spans are verified as exact substrings." },
+  { proposed: "4 · Policy & Rule Mapper", built: "Mapper", note: "Same role: modify, gap, conflict and manual-control classification over the knowledge graph." },
+  { proposed: "5 · Rule Author", built: "Author", note: "Same role: typed YAML drafts on draft/* git branches." },
+  { proposed: "6 · Validator / Challenger", built: "Validator", note: "Same role. It is deterministic code, deliberately independent of the Author, not a second LLM." },
+  { proposed: "7 · Backtester", built: "Validator (backtest-impact skill)", note: "No LLM was ever planned here, so it runs as a second skill of the Validator over the same sandbox." },
+  { proposed: "8 · Impact Analyst", built: "Validator (backtest-impact skill)", note: "Impact figures come from the same backtest run; the console turns them into a plain-language narrative." },
+  { proposed: "9 · Release Manager", built: "Release", note: "Same role: verifies two-person approval, then shadow, canary 10%, live." },
+  { proposed: "10 · Sentinel Monitor", built: "deploy-monitor MCP tool, called by Release", note: "Drift checking is a tool the Release agent polls, so monitoring cannot deploy anything on its own." },
+];
+
+export const BUILD_STATUS: { part: string; status: "running" | "planned"; detail: string }[] = [
+  { part: "Seven A2A agents with Agent Cards", status: "running", detail: "Live JSON-RPC endpoints at /a2a/{agent}; in-run calls carry the same serialised messages." },
+  { part: "Seven MCP tool servers with allowlists", status: "running", detail: "Official MCP TypeScript SDK, checked by each agent's client and again by each server." },
+  { part: "Typed rule DSL", status: "running", detail: "Rules are YAML validated by a strict typed schema, then compiled to SQL. YAML is the syntax; the schema is what makes it typed." },
+  { part: "Two-person approval, shadow, canary, live, auto-rollback", status: "running", detail: "Run them in the console; the rollout covers 12 synthetic days after approval." },
+  { part: "Regulatory knowledge graph", status: "running", detail: "An in-memory property graph built on every run, with the Neo4j node labels and relationships. Explore it in the console." },
+  { part: "Neo4j database", status: "planned", detail: "Not connected in this deployment. The graph uses the Neo4j schema and the Golden Thread query is written in Cypher, so moving it to Neo4j is a storage change, not a redesign." },
+  { part: "DuckDB sandbox", status: "planned", detail: "This deployment runs the same compiled SQL on SQLite (WebAssembly) so it fits in one serverless function." },
+  { part: "Agents as separate services", status: "planned", detail: "All seven agents run in one deployment today; in a bank each would sit behind its own endpoint with the same cards and messages." },
+];

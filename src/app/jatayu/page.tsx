@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
-import { COVERAGE, TEMPLATE, USE_CASE, VIRTUSA_FIT } from "@/content/jatayu";
+import { COVERAGE, TEMPLATE, USE_CASE, VIRTUSA_FIT, ROLES, BUILD_STATUS } from "@/content/jatayu";
 import { REPO_URL, TEAM } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -155,6 +155,43 @@ export default function JatayuPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="wrap py-28" aria-labelledby="reconcile">
+          <H2 id="reconcile">Proposal and build, side by side</H2>
+          <p data-reveal className="mt-5 max-w-[64ch] text-[18px]">
+            Our Stage 1 submission described ten agent roles. The working build covers all ten with seven agents: intake and applicability became one Reader, the Backtester and Impact Analyst became a skill of the Validator, and the Sentinel became a monitoring tool. Here is the exact mapping, and what is running versus planned.
+          </p>
+          <div data-reveal className="mt-10 overflow-x-auto">
+            <table className="ui w-full min-w-[760px] border-collapse text-[14px]">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="px-3 py-2 font-normal">Proposed role (Stage 1)</th>
+                  <th className="px-3 py-2 font-normal">Implemented as</th>
+                  <th className="px-3 py-2 font-normal">Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ROLES.map((r) => (
+                  <tr key={r.proposed} className="align-top odd:bg-surface">
+                    <td className="px-3 py-2 font-semibold">{r.proposed}</td>
+                    <td className="px-3 py-2">{r.built}</td>
+                    <td className="px-3 py-2 text-muted">{r.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div data-reveal className="mt-12 grid gap-2 md:grid-cols-2">
+            {BUILD_STATUS.map((b) => (
+              <div key={b.part} className={`p-4 ${b.status === "running" ? "bg-ok-soft" : "bg-warn-soft"}`}>
+                <p className="ui text-[15px] font-semibold text-ink">
+                  {b.part} <span className={b.status === "running" ? "text-ok" : "text-warn"}>· {b.status === "running" ? "running now" : "production plan"}</span>
+                </p>
+                <p className="mt-1 text-[16px] text-ink">{b.detail}</p>
               </div>
             ))}
           </div>
