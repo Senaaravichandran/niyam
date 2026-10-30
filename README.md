@@ -4,6 +4,10 @@
 
 Team Dragorithm · Sri Manakula Vinayagar Engineering College, Puducherry · Virtusa Jatayu Season 5, FDS NA Use Case 2: *Regulatory Circular to Live Rule Engine*.
 
+**Live:** https://niyam-ivory.vercel.app · **Submission pack:** [`submission/`](submission/) (deck, deck as PDF, explainer video, architecture, research write-up `niyam.html`)
+
+![NIYAM architecture: seven A2A agents, seven MCP servers, knowledge and data layer](submission/NIYAM_Architecture.png)
+
 > Everything the demo shows is **synthetic**: the circular `RBI-SYN-2026-017`, the bank, its loans, rules, approvers and alerts. RBI statistics quoted on the site are public and cited at their source.
 
 ## Run it

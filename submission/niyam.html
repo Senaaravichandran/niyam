@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIYAM · Regulatory Circular to Live Rule Engine</title>
+<meta name="description" content="NIYAM by Team Dragorithm for Virtusa Jatayu Season 5, FDS NA Use Case 2: the problem, existing solutions, our solution, evidence and roadmap.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#ffffff; --surface:#f2f5f9; --s2:#e6ebf2; --ink:#0b1f3a; --muted:#45546b; --soft:#5b6a80;
+    --accent:#1d4ed8; --accent-soft:#e3ebfd; --ok:#047857; --ok-soft:#e1f3ec; --warn:#b45309; --warn-soft:#fbf0df;
+    --bad:#b91c1c; --bad-soft:#fbe5e5; --navy:#0b1f3a; --navy2:#132c4f; --on-navy:#e9eff8; --on-navy-muted:#a9b8cf;
+    --display:"Libre Franklin", "Segoe UI", Arial, sans-serif; --text:"Source Serif 4", Georgia, serif;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:18px/1.6 var(--text); -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  h1,h2,h3 { font-family:var(--display); letter-spacing:-0.03em; line-height:1.05; margin:0; }
+  h2 { font-size:clamp(30px,3.4vw,46px); margin-bottom:22px; }
+  h3 { font-size:22px; letter-spacing:-0.02em; margin:28px 0 10px; }
+  p { margin:0 0 14px; }
+  a { color:var(--accent); }
+  .ui { font-family:var(--display); }
+  section { padding:72px 0; }
+  .alt { background:var(--surface); }
+  .navy { background:var(--navy); color:var(--on-navy); }
+  .navy a { color:#9db4ee; }
+  .lead { font-size:clamp(20px,2vw,25px); line-height:1.4; max-width:62ch; }
+  .muted { color:var(--muted); }
+  .small { font-size:15px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--display); font-size:15px; }
+  th { text-align:left; font-weight:600; color:var(--muted); padding:10px 12px; }
+  td { padding:10px 12px; vertical-align:top; }
+  tbody tr:nth-child(odd) { background:var(--surface); }
+  .alt tbody tr:nth-child(odd) { background:var(--bg); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .card { background:var(--surface); padding:18px 20px; }
+  .alt .card { background:var(--bg); }
+  .card b { font-family:var(--display); display:block; font-size:17px; margin-bottom:4px; }
+  .num { font-family:var(--display); font-size:clamp(40px,4.4vw,64px); font-weight:700; letter-spacing:-0.04em; line-height:1; }
+  .tag { display:inline-block; font-family:var(--display); font-size:13px; font-weight:600; padding:2px 8px; }
+  .ok { background:var(--ok-soft); color:var(--ok); } .warn { background:var(--warn-soft); color:var(--warn); }
+  .bad { background:var(--bad-soft); color:var(--bad); } .acc { background:var(--accent-soft); color:var(--accent); }
+  pre, code { font-family:ui-monospace, Consolas, monospace; font-size:14px; }
+  pre { background:var(--navy); color:var(--on-navy); padding:18px 20px; overflow-x:auto; line-height:1.55; }
+  .diff .m { color:#ffb4b4; } .diff .p { color:#a7f3d0; }
+  mark { background:var(--accent-soft); color:var(--ink); padding:0 2px; }
+  header.top { background:#1f1a50; color:#fff; padding:56px 0 64px; }
+  header.top .kicker { font-family:var(--display); color:#c9c3f2; font-size:17px; }
+  header.top h1 { font-size:clamp(46px,7vw,96px); margin:18px 0 10px; }
+  header.top .sub { font-family:var(--display); font-size:clamp(20px,2.2vw,28px); color:#fff; max-width:30ch; line-height:1.2; }
+  header.top .team { font-family:var(--display); color:#c9c3f2; margin-top:28px; font-size:16px; line-height:1.6; }
+  nav.toc { position:sticky; top:0; z-index:5; background:#fff; }
+  nav.toc .wrap { display:flex; gap:18px; overflow-x:auto; padding-top:12px; padding-bottom:12px; font-family:var(--display); font-size:15px; white-space:nowrap; }
+  nav.toc a { color:var(--ink); text-decoration:none; } nav.toc a:hover { color:var(--accent); }
+  figure { margin:0; } figure img { width:100%; height:auto; display:block; background:#fff; }
+  figcaption { font-family:var(--display); font-size:14px; color:var(--muted); margin-top:8px; }
+  .callout { background:var(--warn-soft); padding:16px 20px; font-family:var(--display); font-size:16px; }
+  ol.steps { padding-left:22px; } ol.steps li { margin-bottom:8px; }
+  .src { font-family:var(--display); font-size:14px; color:var(--soft); }
+  footer { padding:40px 0 60px; font-family:var(--display); font-size:14px; color:var(--muted); }
+  @media (max-width: 860px) { .grid2,.grid3,.grid4 { grid-template-columns:1fr; } table { font-size:14px; } section { padding:52px 0; } }
+  @media print { nav.toc { display:none; } section { padding:28px 0; break-inside:avoid-page; } header.top { padding:30px 0; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="kicker">Virtusa Jatayu Season 5 · FDS NA, Use Case 2 · Regulatory Circular to Live Rule Engine</p>
+    <h1>NIYAM</h1>
+    <p class="sub">Every clause becomes a rule: tested, approved by two people, released safely, and traceable back to its sentence.</p>
+    <p class="team">Team Dragorithm: Senaaravichandran A, Abiyshek S, Jerrick Austin Manuel G, Venkat Narayanan S, Vishal R<br>
+      Mentor: Prof. Suresh R · Sri Manakula Vinayagar Engineering College, Madagadipet, Puducherry<br>
+      Live product: <a href="https://niyam-ivory.vercel.app" style="color:#fff">niyam-ivory.vercel.app</a> · Source: <a href="https://github.com/Senaaravichandran/niyam" style="color:#fff">github.com/Senaaravichandran/niyam</a></p>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents"><div class="wrap">
+  <a href="#summary">Summary</a><a href="#problem">The problem</a><a href="#example">A real failure mode</a><a href="#existing">Existing solutions</a>
+  <a href="#solution">Our solution</a><a href="#architecture">Architecture</a><a href="#evidence">Evidence</a><a href="#coverage">Use-case coverage</a>
+  <a href="#business">Business case</a><a href="#responsible">Responsible AI</a><a href="#limits">Limits</a><a href="#roadmap">Roadmap</a><a href="#qa">Judge Q&amp;A</a><a href="#sources">Sources</a>
+</div></nav>
+
+<section id="summary">
+  <div class="wrap">
+    <h2>Summary</h2>
+    <p class="lead">When the Reserve Bank of India changes one number in one paragraph, a bank has to find every internal policy and system rule that depends on it, change them correctly, and prove why each alert now fires. Today that is manual work measured in weeks. NIYAM is a working multi-agent system that does it in minutes, with humans in charge.</p>
+    <div class="grid4" style="margin-top:30px">
+      <div class="card"><div class="num">7</div><b>A2A agents</b><span class="small muted">A Conductor and six workers, each with a live Agent Card</span></div>
+      <div class="card"><div class="num">14/14</div><b>Generated tests pass</b><span class="small muted">after the Validator catches a real “exceeding” error</span></div>
+      <div class="card"><div class="num">10/10</div><b>Seeded rule bugs caught</b><span class="small muted">by the independent Validator, with no false alarm</span></div>
+      <div class="card"><div class="num">129</div><b>Automated tests</b><span class="small muted">covering agents, DSL, approvals, rollout and security</span></div>
+    </div>
+    <p class="small muted" style="margin-top:22px">All circulars, banks, loans, approvers and alerts in the demo are synthetic and labelled so. RBI statistics are public and cited.</p>
+  </div>
+</section>
+
+<section id="problem" class="alt">
+  <div class="wrap">
+    <h2>The problem, in depth</h2>
+    <div class="grid2">
+      <div>
+        <h3>The rulebook now changes by amendment</h3>
+        <p>On 28 November 2025 RBI consolidated roughly 9,000 circulars into 244 Master Directions, one per subject and type of regulated entity. The consolidation itself changed no policy, but it changed how change arrives: every future instruction is an amendment to a living document. In effect, banks now receive a stream of diffs to their rulebook, and no bank system can read a regulatory diff and produce a rule diff.</p>
+        <h3>The manual path</h3>
+        <ol class="steps">
+          <li>Compliance reads the circular and decides which paragraphs bind this bank (entity type, layer, products, dates).</li>
+          <li>Analysts turn each binding paragraph into an obligation: what, how much, by when.</li>
+          <li>Someone finds every internal policy and system rule (AML, limits, fraud, reporting) the obligation touches.</li>
+          <li>Tickets go to IT; engineers rewrite rule logic, often by editing the previous version.</li>
+          <li>Testing, if any, is against the engineer's reading, not the regulator's wording.</li>
+          <li>The change goes live with little evidence of its impact and no link back to the clause.</li>
+        </ol>
+        <p>Compliance officers report that fully implementing a regulatory change still takes more than a year on average (CUBE, 2025 survey).</p>
+      </div>
+      <div>
+        <h3>Where it goes wrong</h3>
+        <table>
+          <thead><tr><th>Failure</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><b>Comparator error</b></td><td>The clause says “exceeding 12 per cent”; the rule fires at <code>&gt;=</code> 12, flagging exposures exactly at the limit.</td></tr>
+            <tr><td><b>Scope error</b></td><td>A paragraph for Upper Layer NBFCs is applied to a co-operative bank, or the reverse.</td></tr>
+            <tr><td><b>Stale exception</b></td><td>An internal policy still lets the Board approve above the new limit, suppressing the report the circular now requires.</td></tr>
+            <tr><td><b>Missed obligation</b></td><td>A new concentration limit has no rule at all.</td></tr>
+            <tr><td><b>Unexpected impact</b></td><td>The new rule triples alert volume and the operations team finds out on day one.</td></tr>
+            <tr><td><b>No audit trail</b></td><td>An inspector asks why an alert fired; nobody can point to the sentence and the approvers.</td></tr>
+          </tbody>
+        </table>
+        <h3>Who feels it most</h3>
+        <p>RBI imposed 353 penalties worth ₹54.78 crore in 2024-25, and 264 of them fell on co-operative banks. There were 1,457 urban co-operative banks at the end of March 2025 and 9,291 registered NBFCs at the end of 2024. These institutions carry the same rulebook as the largest banks with a fraction of the compliance and IT staff.</p>
+        <h3>What the regulator expects of AI</h3>
+        <p>RBI's FREE-AI framework (August 2025) sets seven Sutras, including Accountability and Understandable by Design, and 26 recommendations. Any AI touching compliance must be explainable, keep humans accountable, and be safe to roll back.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="example">
+  <div class="wrap">
+    <h2>One sentence, one character, one failure</h2>
+    <p class="lead">The demo circular RBI-SYN-2026-017 (synthetic) lowers the group exposure limit and says, in paragraph 4(b):</p>
+    <blockquote class="lead" style="margin:18px 0 22px; padding-left:18px; border-left:4px solid var(--accent); font-style:italic">“A regulated entity shall flag for report any group of connected counterparties with an <mark>aggregate exposure exceeding 12 per cent of Tier 1 capital</mark>.”</blockquote>
+    <div class="grid2">
+      <div>
+        <p>The bank's live rule was written for the old limit as “equal to or exceeding 15 per cent”, with a Board-approval exception. An engineer making the obvious minimal edit changes 15 to 12 and keeps everything else. The new rule now fires on <code>&gt;= 12</code> and still lets the Board suppress reports, which paragraph 5 forbids.</p>
+        <p>NIYAM's Author agent makes exactly that minimal edit. The Validator, which is built separately and never shares code with the Author, generates tests from the clause rather than from the draft. The test “a group at exactly 12.00%” must stay quiet, and the draft fires. The Validator sends an objection to the Author over A2A; the Author fixes it; all 14 tests pass.</p>
+      </div>
+      <pre class="diff"><span class="m">- op: "&gt;="</span>
+<span class="p">+ op: "&gt;"</span>
+  value: 12
+<span class="m">- unless: board_approved</span>
+
+Objection OBJ-EXP-012-01 · OP-FIDELITY + POLICY-OVERRIDE
+expected: op "&gt;" because 4(b) says "exceeding"
+          (strictly greater; equality does not trigger)
+found:    op "&gt;=", unless: board_approved
+evidence: Exactly on the limit (12.00%): expected quiet, fired</pre>
+    </div>
+  </div>
+</section>
+
+<section id="existing" class="alt">
+  <div class="wrap">
+    <h2>Existing solutions, and where they stop</h2>
+    <p class="lead">Regulatory-change technology is good at telling a bank what changed and who owns it. We found none that takes the last step: a tested, approved, monitored change to a live rule, traceable to the clause.</p>
+    <table style="margin-top:20px">
+      <thead><tr><th>Product</th><th>What it does</th><th>Where it stops</th></tr></thead>
+      <tbody>
+        <tr><td><b>CUBE</b> (with Thomson Reuters Regulatory Intelligence, 4CRisk.ai)</td><td>AI horizon scanning; maps obligations to policies, controls and risks</td><td>Obligation-to-control map; no executable rule, test or release</td></tr>
+        <tr><td><b>Corlytics</b></td><td>Regulatory monitoring, policy management, controls mapping, integrations to GRC tools</td><td>Policy and control alignment</td></tr>
+        <tr><td><b>Ascent RegTech</b></td><td>Obligation registers built from rulebooks</td><td>The register</td></tr>
+        <tr><td><b>Compliance.ai</b> (Archer)</td><td>Change monitoring feeding GRC workflow</td><td>Alerts and tasks</td></tr>
+        <tr><td><b>Norm Ai</b></td><td>Regulation-to-code compliance agents with an audit trail</td><td>Checks documents and actions; not a bank's monitoring rules with staged release</td></tr>
+        <tr><td><b>Hummingbird, Lucinity</b></td><td>Explainable AML investigation agents with human approval</td><td>Investigation, not rule change</td></tr>
+        <tr><td><b>Wolters Kluwer OneSumX, Regnology</b></td><td>Regulatory reporting and capital engines</td><td>Vendor-shipped releases, not derived per bank from each circular</td></tr>
+        <tr><td><b>IBM OpenPages with watsonx</b></td><td>GRC workflow with an LLM assistant</td><td>Tracks obligations and controls</td></tr>
+        <tr><td><b>OnFinance AI</b> (India)</td><td>Compliance agents fine-tuned on RBI, SEBI and IRDAI material; reports high internal accuracy</td><td>Interpretation and workflow; accuracy self-reported</td></tr>
+        <tr style="background:var(--accent);color:#fff"><td><b>NIYAM</b></td><td>Circular → clause → obligation → mapped rule → typed draft → tests → backtest → two signatures → shadow → canary → live</td><td>Does not stop until every alert traces to its sentence, and rolls itself back on drift</td></tr>
+      </tbody>
+    </table>
+    <p class="src" style="margin-top:10px">Based on vendors' public descriptions and trade press, 2025-2026.</p>
+    <h3>Research we built on</h3>
+    <div class="grid2">
+      <div class="card"><b>ComplianceNLP (ACL 2026 Industry, arXiv:2604.23585)</b>A knowledge graph of 12,847 provisions lifted gap detection to 87.7 F1; graph re-ranking was the largest gain. <i>In NIYAM:</i> the Mapper reasons over a regulatory knowledge graph.</div>
+      <div class="card"><b>Code-as-Auditor (CIKM 2026, arXiv:2609.19199)</b>Separates applicability, compliance and effect into executable structure with a generator and a verifier. <i>In NIYAM:</i> Reader scopes before extraction; Author and Validator are separate.</div>
+      <div class="card"><b>Compliance-to-Code (arXiv:2505.19804)</b>Decomposes 1,159 clauses into subject, condition, constraint and context. <i>In NIYAM:</i> the obligation schema, compiled from a typed DSL instead of free code.</div>
+      <div class="card"><b>Regulatory Graphs and GenAI for Transaction Monitoring (arXiv:2506.01093)</b>Monitoring with explanations grounded in the clause. <i>In NIYAM:</i> the Golden Thread.</div>
+    </div>
+  </div>
+</section>
+
+<section id="solution">
+  <div class="wrap">
+    <h2>Our solution</h2>
+    <p class="lead">Language work goes to agents. Arithmetic, tests, deployment and rollback go to deterministic code. Decisions go to people.</p>
+    <h3>Seven agents, one job each</h3>
+    <table>
+      <thead><tr><th>Agent</th><th>Job</th><th>Tools it may call (MCP)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Conductor</b></td><td>Finds workers by Agent Card skills, delegates A2A tasks, runs an allowlist self-test, caps objection rounds, stops at the human gate</td><td>kg_read_circular, kg_stats</td></tr>
+        <tr><td><b>Reader</b></td><td>Splits the circular at its own numbering and scopes each clause for the bank, with a reason</td><td>kg_read_circular, kg_write_clauses, sm_bank_profile</td></tr>
+        <tr><td><b>Extractor</b></td><td>Turns clauses into typed obligations; the quoted span must be an exact substring or it is rejected. Optional Claude path</td><td>kg_read_clauses, sm_resolve_metric, kg_write_obligations</td></tr>
+        <tr><td><b>Mapper</b></td><td>Walks the knowledge graph: rules to modify, gaps, policy conflicts, manual controls</td><td>kg_read_obligations, kg_find_rules, kg_find_policies, kg_link_mapping, git_read_rule</td></tr>
+        <tr><td><b>Author</b></td><td>Writes typed YAML rule drafts on draft/* git branches; revises on objection. Optional Claude path</td><td>git_read_rule, git_commit_draft, dsl_validate, dsl_compile</td></tr>
+        <tr><td><b>Validator</b></td><td>Independent challenger: static checks, tests generated from the clause, A2A objections; then a 90-day backtest and impact analysis</td><td>kg_read_obligations, dsl_validate, dsl_compile, bt_run_tests, bt_run_backtest, git_diff</td></tr>
+        <tr><td><b>Release</b></td><td>Verifies two-person approval, promotes the draft branch, rolls out shadow → canary 10% → live, polls the Sentinel, rolls back</td><td>appr_verify, deploy_promote, deploy_set_mode, deploy_sentinel_check, deploy_rollback, git_log</td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:20px">Our Stage 1 proposal listed ten roles. The build covers all ten with seven agents: Intake and Applicability are one Reader; the Backtester and Impact Analyst are a skill of the Validator; the Sentinel is a monitoring tool the Release agent polls, so monitoring can never deploy anything itself. None of those three roles needs a language model, so deterministic code is the safer choice.</div>
+
+    <div class="grid2" style="margin-top:10px">
+      <div>
+        <h3>A rule is data, never code</h3>
+        <p>Rules are YAML validated by a strict typed schema: unknown fields, metrics or operators are rejected and text fields must be single-line. A deterministic compiler turns each rule into one read-only SQL statement over the Bank Semantic Model, with percentages rounded so a value on the limit compares as equal.</p>
+<pre>rule_id: SYN-EXP-012
+version: 2
+when:
+  metric: group_exposure_pct_tier1
+  op: "&gt;"
+  value: 12
+  unit: pct
+source:
+  circular: RBI-SYN-2026-017
+  clause: 4(b)
+  span: aggregate exposure exceeding 12 per cent of Tier 1 capital</pre>
+      </div>
+      <div>
+        <h3>Safe release</h3>
+        <p><b>Two people, two roles.</b> Each approval is an HMAC token over the rule id, version, the SHA-256 of the exact file, the approver, role and run; tokens expire after 24 hours. The server also signs the whole approval pack, so obligations, mappings and forecasts cannot be altered between approval and release.</p>
+        <p><b>Shadow, canary, live.</b> Three days logging only, four days on 10% of subjects behind a feature flag, then live.</p>
+        <p><b>Sentinel.</b> Each day's alerts are compared with the backtest forecast band (mean ± 3 standard deviations). In the demo a duplicated loan feed on day 10 breaches the band; the two exposure rules roll back automatically (flag off, git revert) while the concentration rule, a ratio unaffected by duplication, stays live.</p>
+        <p><b>Golden Thread.</b> Any alert opens its rule version and commit, both approvers, the obligation, the exact clause text and the circular.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture" class="alt">
+  <div class="wrap">
+    <h2>Architecture</h2>
+    <figure>
+      <img src="NIYAM_Architecture.png" alt="NIYAM architecture: inputs, the Conductor and six agents in three lanes, the human gate, release with Sentinel and Golden Thread, seven MCP servers, the knowledge and data layer, and guardrails">
+      <figcaption>Seven A2A agents over JSON-RPC (A2A v1.0 Agent Cards), seven MCP servers on the official TypeScript SDK with allowlists enforced by client and server, a regulatory knowledge graph with the Neo4j schema, and a typed rule DSL compiled to SQL.</figcaption>
+    </figure>
+    <div class="grid3" style="margin-top:26px">
+      <div class="card"><b>A2A</b>Each agent publishes an Agent Card at <code>/a2a/{agent}/.well-known/agent-card.json</code> and answers <code>SendMessage</code>, <code>GetTask</code> and <code>CancelTask</code>. Objections between Validator and Author are A2A tasks.</div>
+      <div class="card"><b>MCP</b>Twenty-five tools across seven servers: regulatory-kg, semantic-model, dsl-compiler, backtest, git-draft, approvals, deploy-monitor. The Extractor asking for the deploy API is refused twice.</div>
+      <div class="card"><b>Knowledge and data</b>Circular → Clause → Obligation → Policy → Rule → Approval → Deployment. The Bank Semantic Model maps business metrics to the bank's columns, so onboarding a new bank changes the mapping, not the rules.</div>
+    </div>
+  </div>
+</section>
+
+<section id="evidence">
+  <div class="wrap">
+    <h2>Evidence, measured</h2>
+    <div class="grid4">
+      <div class="card"><div class="num">115 → 601</div><b>Backtest, 90 days</b><span class="small muted">alerts under old vs amended rules; 8 newly flagged groups or borrowers</span></div>
+      <div class="card"><div class="num">24/30</div><b>Clause extraction</b><span class="small muted">rule-based path, every field right on hand-labelled hard cases; precision 1.0 per field</span></div>
+      <div class="card"><div class="num">2 of 3</div><b>Rules rolled back</b><span class="small muted">on injected drift; the unaffected rule stays live</span></div>
+      <div class="card"><div class="num">~3 s</div><b>Circular to approval pack</b><span class="small muted">measured on the production deployment</span></div>
+    </div>
+    <h3>Attacks we tested on the live deployment</h3>
+    <table>
+      <thead><tr><th>Attempt</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Edit a rule after both approvers sign</td><td><span class="tag bad">refused</span> “Rule file changed after approval”</td></tr>
+        <tr><td>Inflate the forecast to silence the Sentinel</td><td><span class="tag bad">refused</span> approval pack signature no longer matches</td></tr>
+        <tr><td>Ask for approval of a pack the server never produced</td><td><span class="tag bad">refused</span> HTTP 409</td></tr>
+        <tr><td>Reuse tokens from another run</td><td><span class="tag bad">refused</span> “Token was issued for another run”</td></tr>
+        <tr><td>Smuggle SQL through a rule's text fields</td><td><span class="tag bad">refused</span> single-line schema; one read-only SELECT per rule</td></tr>
+        <tr><td>Extractor calls the deploy API</td><td><span class="tag bad">refused</span> by its MCP client and again by the server</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:12px">Where the rule-based extractor is still wrong: numbers written in words, limits in rupee amounts, “the higher of” constructions, and two procedural phrasings. The optional Claude path exists for these, and every model answer is still span-checked, schema-checked and tested.</p>
+  </div>
+</section>
+
+<section id="coverage" class="alt">
+  <div class="wrap">
+    <h2>Every line of the use case, implemented</h2>
+    <table>
+      <thead><tr><th>Use case asks for</th><th>NIYAM</th></tr></thead>
+      <tbody>
+        <tr><td><b>Workflow</b>: intake → extraction → mapping → authoring → backtesting → impact → validation → approval → shadow → rollout and monitoring</td><td>Reader → Extractor → Mapper → Author → Validator (tests, backtest, impact) → two-person approval → Release (shadow, canary, live) → Sentinel → rollback → Golden Thread</td></tr>
+        <tr><td><b>Data sources</b>: circulars, policies, rule repositories, bank profiles, transactions, backtest results, deployment metrics, approval history</td><td>Synthetic circular; POL-CR-07 policy; git rule repository; bank profile; 90-day loan book; backtest series and forecasts; daily rollout metrics; signed approval tokens</td></tr>
+        <tr><td><b>Tech stack</b>: multi-agent orchestration, document retrieval, obligation registry, rule DSL, A2A messaging, sandbox engine, backtesting, version control, deployment APIs, monitoring, LLMs</td><td>Conductor over A2A; clause store in the knowledge graph; Obligation nodes; typed YAML DSL; A2A v1.0 JSON-RPC; SQL sandbox; backtest MCP server; isomorphic-git; deploy-monitor MCP server; Sentinel; Claude for Extractor and Author</td></tr>
+        <tr><td><b>Guardrails</b>: draft-only changes, clause-level traceability, validation, mandatory human approval, controlled rollout, monitoring, rollback, rate limits</td><td>draft/* branches only; exact-span verification and Golden Thread; Validator with generated tests; two-person HMAC approval and signed pack; shadow and 10% canary; Sentinel band; automatic revert; objection rounds capped at 3 and per-address limits</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="business">
+  <div class="wrap">
+    <h2>Business case</h2>
+    <div class="grid2">
+      <div>
+        <h3>Who needs it first</h3>
+        <p><b>Urban co-operative and small finance banks, and mid-layer NBFCs:</b> the full RBI load with lean teams, and most of the penalties. <b>Large banks:</b> a regulation-to-rule layer over the AML, fraud and limit engines they already run. <b>IT services firms:</b> an accelerator inside compliance-transformation programmes.</p>
+        <h3>Market</h3>
+        <p>Analysts size the global RegTech market at roughly USD 15 to 19 billion in 2025, growing 17 to 21% a year (IMARC; ResearchAndMarkets). India-specific growth estimates range from about 18% to 27% a year depending on the analyst. Our India serviceable estimate of about ₹550 crore a year is a team estimate built bottom-up from entity counts and assumed price points.</p>
+      </div>
+      <div>
+        <h3>Why it fits Virtusa</h3>
+        <p>BFSI is Virtusa's largest practice. NIYAM is designed as a delivery accelerator rather than a closed product: regulator-agnostic agents plus a client-specific semantic model. A new client engagement maps the client's tables to the business metrics; the agents, DSL, tests and release path stay the same. New regulators (SEBI, IRDAI, then others) arrive as new Reader segmenters and Agent Cards, not a rewrite. Rules export as portable SQL that can target a client's warehouse or rule engine.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="responsible" class="alt">
+  <div class="wrap">
+    <h2>Responsible AI, aligned with RBI FREE-AI</h2>
+    <table>
+      <thead><tr><th>Sutra</th><th>How NIYAM enforces it</th></tr></thead>
+      <tbody>
+        <tr><td>Trust is the Foundation</td><td>Spans are verified, never trusted; non-synthetic numbers carry sources</td></tr>
+        <tr><td>People First</td><td>No rule reaches production without two named people signing the exact file</td></tr>
+        <tr><td>Innovation over Restraint</td><td>Agents do weeks of reading and drafting in minutes</td></tr>
+        <tr><td>Fairness and Equity</td><td>Rules are scoped by entity type; the backtest shows who is newly flagged before anyone signs</td></tr>
+        <tr><td>Accountability</td><td>Tokens name the approver and role; every alert names them through the Golden Thread</td></tr>
+        <tr><td>Understandable by Design</td><td>Every objection states expected, found and the clause; every alert links to its sentence</td></tr>
+        <tr><td>Safety, Resilience and Sustainability</td><td>Shadow, canary, Sentinel and automatic rollback; deterministic code for maths and deployment</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:12px">“Aligned with” describes design intent; it is not a claim of regulatory certification.</p>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <h2>What is real, and what changes in a bank</h2>
+    <table>
+      <thead><tr><th>Part</th><th>In the proof of concept</th><th>In production</th></tr></thead>
+      <tbody>
+        <tr><td>Agents</td><td><span class="tag ok">running</span> Seven A2A agents in one deployment; in-run calls carry serialised JSON-RPC</td><td>Each agent as its own service behind the bank's gateway</td></tr>
+        <tr><td>Knowledge graph</td><td><span class="tag ok">running</span> In-memory, Neo4j labels and relationships</td><td><span class="tag warn">planned</span> Neo4j running the Golden Thread Cypher</td></tr>
+        <tr><td>Sandbox SQL</td><td><span class="tag ok">running</span> SQLite compiled to WebAssembly</td><td><span class="tag warn">planned</span> DuckDB or the bank's warehouse; same SQL</td></tr>
+        <tr><td>Rule repository</td><td><span class="tag ok">running</span> Real git (isomorphic-git) in memory</td><td>The bank's Git server with protected main</td></tr>
+        <tr><td>LLM</td><td><span class="tag ok">running</span> Rule-based by default; Claude for Extractor and Author when a key is set</td><td>A private or on-premise model through the same interfaces</td></tr>
+        <tr><td>Data</td><td><span class="tag acc">synthetic</span> 706 borrowers, 48 groups, 90 days, fixed seed</td><td>Stays inside the bank; agents see schemas and aggregates only</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="roadmap" class="navy">
+  <div class="wrap">
+    <h2>Roadmap</h2>
+    <div class="grid4">
+      <div><b class="ui">0 to 3 months</b><p>Read-only pilot with one UCB or NBFC: obligation register and impact reports, no deployment. Measure extraction precision and analyst hours saved.</p></div>
+      <div><b class="ui">3 to 6 months</b><p>MCP adapters for the bank's AML, fraud and limit engines; Neo4j and DuckDB inside the bank's boundary; private model option.</p></div>
+      <div><b class="ui">6 to 12 months</b><p>Master Direction amendment tracker: every change arrives as a diff and only changed clauses run downstream.</p></div>
+      <div><b class="ui">12 to 24 months</b><p>SEBI and IRDAI packs, then other regulators: only the Reader's segmenter and the semantic model change.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="wrap">
+    <h2>Hard questions, straight answers</h2>
+    <div class="grid2">
+      <div><h3>An LLM invents a threshold. What stops it?</h3><p>Five independent layers: exact-span check, strict schema, the Validator's clause-derived tests on compiled SQL, two signatures over the file hash, and shadow mode with no customer effect. No path skips a human.</p></div>
+      <div><h3>Why several agents and not one prompt?</h3><p>Separation of duties. The Author cannot validate its own work, the Extractor cannot deploy, Release cannot write rules. Each agent's tools are limited by its card and checked by every server.</p></div>
+      <div><h3>Why seven agents, not ten?</h3><p>We keep AI agents only where language understanding is needed. Backtesting, impact maths and drift checks are deterministic code: faster, reproducible, and they cannot hallucinate. All ten proposed roles are still covered.</p></div>
+      <div><h3>Is Neo4j connected?</h3><p>Not in the proof of concept. The graph is in memory with the Neo4j schema, and the Golden Thread query is written in Cypher, so moving to Neo4j is a storage change, not a redesign.</p></div>
+      <div><h3>Does it scale?</h3><p>Agents run once per circular, off the hot path. What runs per transaction is compiled SQL, portable to the bank's warehouse or rule engine.</p></div>
+      <div><h3>What about customer data?</h3><p>Models see circular text and rule metadata only. Backtests run inside the bank's boundary on its own data.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="sources" class="alt">
+  <div class="wrap">
+    <h2>Sources</h2>
+    <ul class="src" style="line-height:1.9">
+      <li>RBI consolidates ~9,000 circulars into 244 Master Directions, 28 Nov 2025: <a href="https://www.businesstoday.in/latest/economy/story/rbi-consolidates-9000-circulars-into-244-master-directions-for-enhanced-ease-of-doing-business-details-here-504215-2025-11-28">Business Today</a></li>
+      <li>353 penalties, ₹54.78 crore, 264 on co-operative banks, FY25 (RBI Annual Report): <a href="https://www.business-standard.com/finance/news/rbi-imposed-penalties-on-353-banks-other-regulated-entities-in-fy25-125060100307_1.html">Business Standard</a></li>
+      <li>1,457 UCBs at end-March 2025 (RBI Trend and Progress): <a href="https://www.business-standard.com/industry/banking/ucbs-decline-to-1457-in-fy25-125122901022_1.html">Business Standard</a></li>
+      <li>9,291 registered NBFCs, 31 Dec 2024: <a href="https://website.rbi.org.in/documents/87730/39016390/ListofNBFCsandARCsregisteredwiththeRBI.pdf">RBI</a></li>
+      <li>FREE-AI framework, 13 Aug 2025: <a href="https://kpmg.com/in/en/insights/2025/08/rbi-free-ai-committee-report-on-framework-for-responsible-and-ethical-enablement-of-artificial-intelligence.html">KPMG India summary</a></li>
+      <li>Regulatory change takes more than a year (CUBE Cost of Compliance 2025): <a href="https://www.processexcellencenetwork.com/change-management/news/automation-reshapes-regulatory-change-management-processes">Process Excellence Network</a></li>
+      <li>RegTech market range: <a href="https://www.imarcgroup.com/regtech-market">IMARC</a>; ResearchAndMarkets (Nov 2025)</li>
+      <li>Real UCB exposure limits (15% single, 25% group of Tier 1), RBI/2019-20/171: <a href="https://website.rbi.org.in/web/rbi/-/notifications/master-circular-exposure-norms-and-statutory-other-restrictions-ucbs-1">RBI</a></li>
+      <li>Papers: <a href="https://arxiv.org/abs/2604.23585">arXiv:2604.23585</a>, <a href="https://arxiv.org/abs/2609.19199">arXiv:2609.19199</a>, <a href="https://arxiv.org/abs/2505.19804">arXiv:2505.19804</a>, <a href="https://arxiv.org/abs/2506.01093">arXiv:2506.01093</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer><div class="wrap">NIYAM by Team Dragorithm · Virtusa Jatayu Season 5 · FDS NA Use Case 2 · All demo data is synthetic. The synthetic circular uses 10% and 12% limits on purpose so they are never mistaken for RBI's real 15% and 25%.</div></footer>
+</body>
+</html>

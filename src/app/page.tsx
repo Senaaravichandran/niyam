@@ -8,11 +8,13 @@ import { Hero } from "@/components/landing/Hero";
 import { Intro } from "@/components/landing/Intro";
 import { Letter } from "@/components/landing/Letter";
 import { Showcase } from "@/components/landing/Showcase";
+import { Splash } from "@/components/landing/Splash";
 import { Stages } from "@/components/landing/Stages";
 
 export default function Home() {
   return (
     <>
+      <Splash />
       <Nav />
       <main>
         <Hero />

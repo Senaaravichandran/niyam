@@ -318,3 +318,27 @@ code,
   }
 }
 }
+
+/* Competition opening card */
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.splash-in {
+  animation: splash-in 700ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html.intro-seen .splash {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-in {
+    animation: none;
+  }
+}
