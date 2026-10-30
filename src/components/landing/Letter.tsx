@@ -4,7 +4,7 @@ import { Mark } from "../Logo";
 
 export function Letter() {
   return (
-    <section className="py-40" aria-labelledby="letter-title">
+    <section className="pb-28 pt-32 lg:pb-32 lg:pt-40" aria-labelledby="letter-title">
       <div className="wrap grid gap-12 lg:grid-cols-12">
         <figure data-reveal className="m-0 lg:col-span-5">
           <div className="relative aspect-[4/5] overflow-hidden">
