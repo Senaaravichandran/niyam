@@ -14,12 +14,20 @@ export const ACTIONS = ["flag_for_report", "block_new_exposure", "raise_alert"] 
 
 const metricIds = METRICS.map((m) => m.id) as [string, ...string[]];
 
+/** Single-line text: rule fields are quoted into SQL comments and audit packs, never as code. */
+const line = (min = 1, max = 300) =>
+  z
+    .string()
+    .min(min)
+    .max(max)
+    .regex(/^[^\r\n\u2028\u2029]*$/, "must be a single line");
+
 export const RuleSchema = z
   .object({
     rule_id: z.string().regex(/^SYN-[A-Z]{3}-\d{3}$/, "rule_id must look like SYN-ABC-123"),
     version: z.number().int().positive(),
     status: z.enum(["draft", "approved", "live", "retired"]),
-    title: z.string().min(4),
+    title: line(4, 120),
     applies_to: z.array(z.enum(["UCB", "NBFC-ML", "NBFC-UL", "SCB"])).min(1),
     when: z.object({
       metric: z.enum(metricIds),
@@ -31,10 +39,10 @@ export const RuleSchema = z
     action: z.enum(ACTIONS),
     severity: z.enum(["low", "medium", "high"]),
     source: z.object({
-      circular: z.string(),
-      clause: z.string(),
-      obligation: z.string().optional(),
-      span: z.string().min(8),
+      circular: z.string().regex(/^[A-Z0-9][A-Z0-9-]{2,40}$/, "circular must be a reference like RBI-SYN-2026-017"),
+      clause: z.string().regex(/^[0-9]{1,3}(\.[0-9]{1,3})?(\([a-z]{1,3}\))?$/, "clause must look like 4(b) or 5.2"),
+      obligation: z.string().regex(/^OBL-[A-Za-z0-9-]{1,30}$/).optional(),
+      span: line(8, 400),
     }),
   })
   .strict();

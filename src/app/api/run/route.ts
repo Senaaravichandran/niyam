@@ -1,7 +1,7 @@
 import { createContext } from "@/niyam/context";
 import { llmAvailable } from "@/niyam/llm/claude";
 import { runProposal } from "@/niyam/pipeline";
-import { allowLlm, clientIp, sseStream } from "../_lib/sse";
+import { allowLlm, allowRequest, clientIp, readJson, sseStream, tooMany } from "../_lib/sse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +9,10 @@ export const maxDuration = 120;
 
 /** Phase 1: stream the run from circular to approval pack. */
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as { path?: string; pace?: boolean };
+  if (!allowRequest(clientIp(req))) return tooMany();
+  const parsed = await readJson<{ path?: string; pace?: boolean }>(req, 2_000);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.value ?? {};
   let path: "rule-based" | "llm" = body.path === "llm" ? "llm" : "rule-based";
   let note: string | undefined;
   if (path === "llm") {

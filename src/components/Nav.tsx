@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Wordmark } from "./Logo";
 
 const LINKS = [
-  { href: "/#how", label: "How it works" },
+  { href: "/try", label: "Try a circular" },
   { href: "/architecture", label: "Architecture" },
   { href: "/research", label: "Research" },
+  { href: "/jatayu", label: "Jatayu" },
 ];
 
 export function Nav({ tone = "light" }: { tone?: "light" | "surface" }) {
@@ -15,7 +16,7 @@ export function Nav({ tone = "light" }: { tone?: "light" | "surface" }) {
           <Wordmark />
         </Link>
         <div className="flex items-center gap-1 sm:gap-6">
-          <ul className="hidden items-center gap-6 md:flex">
+          <ul className="hidden items-center gap-6 lg:flex">
             {LINKS.map((l) => (
               <li key={l.href} className="list-none">
                 <Link href={l.href} className="ui text-[15px] text-ink no-underline transition-colors hover:text-accent">
@@ -24,8 +25,11 @@ export function Nav({ tone = "light" }: { tone?: "light" | "surface" }) {
               </li>
             ))}
           </ul>
-          <Link href="/research" className="ui px-2 text-[15px] text-ink no-underline hover:text-accent md:hidden">
-            Research
+          <Link href="/try" className="ui px-2 text-[15px] text-ink no-underline hover:text-accent lg:hidden">
+            Try
+          </Link>
+          <Link href="/jatayu" className="ui px-2 text-[15px] text-ink no-underline hover:text-accent lg:hidden max-[380px]:hidden">
+            Jatayu
           </Link>
           <Link href="/console" className="btn">
             Run the pipeline

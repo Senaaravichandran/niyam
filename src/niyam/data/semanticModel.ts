@@ -44,7 +44,7 @@ export const METRICS: MetricDef[] = [
     grain: "counterparty",
     definition: "Exposure to one counterparty as a share of Tier 1 capital",
     physical: "SUM(loans.outstanding_amt) BY borrower_id / capital.tier1_amt * 100",
-    phrases: ["single counterparty"],
+    phrases: ["single counterparty", "single borrower", "any one borrower", "any single borrower", "a single party", "individual borrower"],
   },
   {
     id: "group_exposure_pct_tier1",
@@ -53,7 +53,7 @@ export const METRICS: MetricDef[] = [
     grain: "group",
     definition: "Aggregate exposure to a group of connected counterparties as a share of Tier 1 capital",
     physical: "SUM(loans.outstanding_amt) BY group_id / capital.tier1_amt * 100",
-    phrases: ["group of connected counterparties", "group exposure"],
+    phrases: ["group of connected counterparties", "group of connected borrowers", "connected counterparties", "borrower group", "group exposure"],
   },
   {
     id: "top20_share_pct_loans",
@@ -62,7 +62,7 @@ export const METRICS: MetricDef[] = [
     grain: "bank",
     definition: "Aggregate exposure to the twenty largest borrowers as a share of total loans and advances",
     physical: "SUM(top 20 borrower totals) / SUM(loans.outstanding_amt) * 100",
-    phrases: ["twenty largest borrowers"],
+    phrases: ["twenty largest borrowers", "top twenty borrowers", "top 20 borrowers", "20 largest borrowers"],
   },
 ];
 

@@ -31,7 +31,7 @@ export function sseStream(run: (emit: (e: RunEvent) => void) => Promise<unknown>
   const stream = new ReadableStream({
     async start(controller) {
       run(push)
-        .catch((err) => push({ type: "error", message: (err as Error).message }))
+        .catch((err) => push({ type: "error", message: publicMessage(err) }))
         .finally(() => {
           finished = true;
           wake?.();
@@ -65,6 +65,41 @@ export function sseStream(run: (emit: (e: RunEvent) => void) => Promise<unknown>
   });
 }
 
+/** Errors we raise on purpose are safe to show; anything else becomes a generic message. */
+export function publicMessage(err: unknown): string {
+  const m = err instanceof Error ? err.message : String(err);
+  if (/^(Bundle|Refused|Deploy refused|Promotion refused|Rule is invalid|No backtest forecast|NIYAM_)/.test(m)) return m;
+  console.error("[niyam] run failed:", err);
+  return "The run failed on the server. Nothing was deployed. Please try again.";
+}
+
+const general = new Map<string, number[]>();
+/** Best-effort per-instance limiter for every expensive endpoint. */
+export function allowRequest(ip: string, perWindow = 30, windowMs = 10 * 60_000) {
+  const now = Date.now();
+  const recent = (general.get(ip) ?? []).filter((t) => now - t < windowMs);
+  if (recent.length >= perWindow) return false;
+  recent.push(now);
+  general.set(ip, recent);
+  if (general.size > 5000) for (const [k, v] of general) if (!v.some((t) => now - t < windowMs)) general.delete(k);
+  return true;
+}
+
+export const tooMany = () => Response.json({ error: "Too many requests from your address. Please wait a few minutes." }, { status: 429 });
+
+/** Read a request body with a hard size cap before parsing. */
+export async function readJson<T>(req: Request, max: number): Promise<{ ok: true; value: T } | { ok: false; res: Response }> {
+  const len = Number(req.headers.get("content-length") ?? "0");
+  if (len > max) return { ok: false, res: Response.json({ error: "Payload too large" }, { status: 413 }) };
+  const text = await req.text();
+  if (text.length > max) return { ok: false, res: Response.json({ error: "Payload too large" }, { status: 413 }) };
+  try {
+    return { ok: true, value: (text ? JSON.parse(text) : {}) as T };
+  } catch {
+    return { ok: false, res: Response.json({ error: "Invalid JSON" }, { status: 400 }) };
+  }
+}
+
 /** Best-effort per-instance limiter for the paid LLM path. */
 const hits = new Map<string, number[]>();
 export function allowLlm(ip: string, perWindow = 4, windowMs = 10 * 60_000) {
@@ -77,5 +112,7 @@ export function allowLlm(ip: string, perWindow = 4, windowMs = 10 * 60_000) {
 }
 
 export function clientIp(req: Request) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  const raw = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  // Group IPv6 clients by /64 so rotating addresses inside one network share a budget.
+  return raw.includes(":") ? raw.split(":").slice(0, 4).join(":") : raw;
 }

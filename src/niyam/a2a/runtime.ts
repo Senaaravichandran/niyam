@@ -75,6 +75,13 @@ function extractSkillInput(msg: Message, agent: AgentId) {
   return { skill: skill!, input };
 }
 
+function safeError(e: unknown) {
+  const m = e instanceof Error ? e.message : String(e);
+  if (/^(Rule is invalid|Refused|DENIED|No (work item|obligation)|A2A |Unknown|Bundle|Deploy refused|Promotion refused|Agent )/.test(m) || / failed /.test(m)) return m;
+  console.error("[niyam] task failed:", e);
+  return "The task failed inside the agent";
+}
+
 export async function handleRpc(agent: AgentId, raw: unknown, ctx: NiyamContext, opts: { global?: boolean } = {}): Promise<JsonRpcResponse> {
   const req = raw as JsonRpcRequest;
   if (!req || req.jsonrpc !== "2.0" || typeof req.method !== "string") {
@@ -97,7 +104,13 @@ export async function handleRpc(agent: AgentId, raw: unknown, ctx: NiyamContext,
   }
 
   const msg = req.params?.message as Message | undefined;
-  if (!msg || !Array.isArray(msg.parts) || !msg.messageId) {
+  if (
+    !msg ||
+    typeof msg.messageId !== "string" ||
+    !Array.isArray(msg.parts) ||
+    msg.parts.length > 20 ||
+    !msg.parts.every((p) => p && typeof p === "object")
+  ) {
     return rpcError(req.id, RPC_ERRORS.invalidParams, "params.message with messageId and parts is required");
   }
   const { skill, input } = extractSkillInput(msg, agent);
@@ -105,7 +118,7 @@ export async function handleRpc(agent: AgentId, raw: unknown, ctx: NiyamContext,
   if (!handler) return rpcError(req.id, RPC_ERRORS.invalidParams, `Agent ${agent} has no skill "${skill}"`);
 
   const task: Task = {
-    id: `task-${crypto.randomUUID().slice(0, 8)}`,
+    id: `task-${crypto.randomUUID()}`,
     contextId: msg.contextId ?? ctx.runId,
     status: { state: "TASK_STATE_WORKING", timestamp: new Date().toISOString() },
     artifacts: [],
@@ -113,7 +126,8 @@ export async function handleRpc(agent: AgentId, raw: unknown, ctx: NiyamContext,
     metadata: { agent, skill },
   };
   store.set(task.id, task);
-  if (store.size > 500) store.delete(store.keys().next().value!);
+  const cap = opts.global ? 200 : 500;
+  while (store.size > cap) store.delete(store.keys().next().value!);
 
   try {
     const res = await handler(ctx, input, { tools: toolsFor(ctx, agent), a2a: new A2AClient(ctx, agent), taskId: task.id });
@@ -131,11 +145,18 @@ export async function handleRpc(agent: AgentId, raw: unknown, ctx: NiyamContext,
       parts: [{ data: res.data, mediaType: "application/json" }],
     });
     task.status = { state: res.state ?? "TASK_STATE_COMPLETED", timestamp: new Date().toISOString(), message: reply };
+    // Public tasks keep a short history only; the full artifact is returned once, in this response.
+    if (opts.global) {
+      const full = structuredClone(task);
+      task.history = [reply];
+      task.artifacts = task.artifacts.map((a) => ({ ...a, parts: [{ text: "Artifact returned in the original response" }] }));
+      return { jsonrpc: "2.0", id: req.id, result: { task: full } };
+    }
   } catch (e) {
     const reply: Message = {
       messageId: crypto.randomUUID(),
       role: "ROLE_AGENT",
-      parts: [{ text: (e as Error).message }],
+      parts: [{ text: safeError(e) }],
       contextId: task.contextId,
       taskId: task.id,
     };

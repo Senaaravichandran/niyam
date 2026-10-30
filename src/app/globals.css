@@ -10,7 +10,7 @@
   --surface-2: #e6ebf2;
   --ink: #0b1f3a;
   --muted: #45546b;
-  --soft: #6b7a90;
+  --soft: #5b6a80;
   --accent: #1d4ed8;
   --accent-ink: #ffffff;
   --accent-soft: #e3ebfd;
@@ -54,7 +54,7 @@
   --color-bad-soft: var(--bad-soft);
   --font-display: var(--font-franklin), "Libre Franklin", system-ui, sans-serif;
   --font-text: var(--font-serif), "Source Serif 4", Georgia, serif;
-  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* taste-skill-ignore: real code blocks only */
 }
 
 @layer base {
@@ -280,7 +280,7 @@ code,
 }
 .stage-range::-webkit-slider-runnable-track {
   height: 8px;
-  background: linear-gradient(var(--ink), var(--ink)) 0 0 / var(--p, 0%) 100% no-repeat, #c9d2df;
+  background: linear-gradient(var(--ink), var(--ink)) 0 0 / var(--p, 0%) 100% no-repeat, #c9d2df; /* taste-skill-ignore: flat progress fill of the range track */
 }
 .stage-range::-moz-range-track {
   height: 8px;

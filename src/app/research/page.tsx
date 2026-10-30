@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
 import { COMPETITORS, PAPERS, QA, ROADMAP, SUTRAS } from "@/content/research";
+import { Scorecard } from "@/components/eval/Scorecard";
 import { FACTS, PICTURES, TEAM } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -95,6 +96,16 @@ export default function ResearchPage() {
               </div>
               <figcaption className="ui mt-2 text-[13px] text-muted">The Reserve Bank of India, Mumbai. One building, 244 Master Directions, every regulated entity in the country.</figcaption>
             </figure>
+          </div>
+        </section>
+
+        <section className="wrap py-28" aria-labelledby="measured">
+          <H2 id="measured">Measured, not claimed</H2>
+          <p data-reveal className="mt-5 max-w-[62ch] text-[18px]">
+            We score the rule-based extractor on 30 hand-labelled synthetic clauses written to include the hard cases, and the Validator on ten deliberately broken rules. The numbers below are computed live by this deployment, failures included.
+          </p>
+          <div className="mt-10">
+            <Scorecard />
           </div>
         </section>
 

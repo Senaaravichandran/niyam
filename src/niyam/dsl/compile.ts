@@ -26,7 +26,9 @@ export function compileRule(rule: Rule): CompiledRule {
   if (!metric) throw new Error(`Unknown metric ${rule.when.metric}`);
   const { op, value } = rule.when;
   const sqlOp = op === "==" ? "=" : op;
-  const header = `-- ${rule.rule_id} v${rule.version} | ${rule.source.circular} para ${rule.source.clause}\n-- "${rule.source.span}"`;
+  // Comment text is sanitised again here so no field can ever end the comment.
+  const safe = (t: string) => t.replace(/[\r\n\u2028\u2029]+/g, " ").replace(/[^\x20-\x7e]/g, "?");
+  const header = `-- ${safe(rule.rule_id)} v${rule.version} | ${safe(rule.source.circular)} para ${safe(rule.source.clause)}\n-- "${safe(rule.source.span)}"`;
 
   let body: string;
   if (metric.grain === "counterparty" || metric.grain === "group") {

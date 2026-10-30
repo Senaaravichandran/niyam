@@ -13,14 +13,33 @@ import type { Clause, Obligation, RejectedObligation } from "../types";
 
 /** Comparator phrases mapped to the condition under which a rule must fire. */
 export const COMPARATORS: { re: RegExp; fire: Operator; meaning: string }[] = [
-  { re: /shall not exceed/i, fire: ">", meaning: "a ceiling: breached only when strictly above" },
-  { re: /not exceeding/i, fire: ">", meaning: "a ceiling: breached only when strictly above" },
-  { re: /not less than|at least/i, fire: "<", meaning: "a floor: breached only when strictly below" },
-  { re: /exceeding|in excess of|more than|above/i, fire: ">", meaning: "strictly greater; equality does not trigger" },
+  { re: /equal to or (?:more than|exceeding|above|greater than)|or more\b/i, fire: ">=", meaning: "inclusive: reaching the limit already triggers" },
+  { re: /shall not exceed|does not exceed|do not exceed|not more than|up to and including|not exceeding/i, fire: ">", meaning: "a ceiling: breached only when strictly above" },
+  { re: /not less than|at least|no less than/i, fire: "<", meaning: "a floor: breached only when strictly below" },
+  { re: /exceeding|exceeds|in excess of|more than|greater than|above/i, fire: ">", meaning: "strictly greater; equality does not trigger" },
   { re: /less than|below/i, fire: ">=", meaning: "must stay strictly below" },
 ];
 
-const NUMBER_PCT = /(\d+(?:\.\d+)?)\s+per cent of (?:its )?([A-Za-z0-9 ]+?)(?=[.,;]|$)/i;
+/** A percentage written as "12 per cent", "12 percent" or "12%", followed by its base. */
+const NUMBER_PCT = /(\d+(?:\.\d+)?)\s*(?:per\s?cent|%)\s+of (?:its |the )?([A-Za-z0-9 ]+?)(?=[.,;)]|$)/i;
+
+/** The comparator that governs a number is the closest one written before it. */
+function governingComparator(text: string, numberIdx: number) {
+  let best: { c: (typeof COMPARATORS)[number]; m: RegExpMatchArray; idx: number } | undefined;
+  for (const c of COMPARATORS) {
+    const re = new RegExp(c.re.source, "gi");
+    for (const m of text.matchAll(re)) {
+      const idx = m.index ?? -1;
+      if (idx < 0 || idx > numberIdx) continue;
+      const end = idx + m[0].length;
+      // Prefer the comparator ending closest to the number; on ties, the longer phrase.
+      if (!best || end > best.idx + best.m[0].length || (end === best.idx + best.m[0].length && m[0].length > best.m[0].length)) {
+        best = { c, m, idx };
+      }
+    }
+  }
+  return best;
+}
 
 export function interpretComparator(phrase: string) {
   return COMPARATORS.find((c) => c.re.test(phrase));
@@ -52,12 +71,15 @@ export function extractClause(
   const text = clause.text;
   const out: Obligation[] = [];
   const pct = text.match(NUMBER_PCT);
-  const comp = COMPARATORS.map((c) => ({ c, m: text.match(c.re) })).find((x) => x.m);
+  // Definitions ("X means ...") describe, they do not oblige.
+  const isDefinition = /\bmeans\b/i.test(text) && !/\b(shall|must)\b/i.test(text);
+  const found = pct && !isDefinition ? governingComparator(text, text.indexOf(pct[0])) : undefined;
+  const comp = found ? { c: found.c, m: found.m } : undefined;
 
   if (pct && comp?.m) {
     const metric = resolveMetric(text);
     // Span: from the nearest "exposure" before the comparator to the end of "per cent of ...".
-    const compIdx = text.search(comp.c.re);
+    const compIdx = found!.idx;
     const before = text.slice(0, compIdx);
     const expoIdx = before.lastIndexOf("exposure");
     const aggIdx = before.lastIndexOf("aggregate exposure");

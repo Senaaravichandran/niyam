@@ -2,6 +2,7 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
 import { BoundaryTester } from "@/components/landing/BoundaryTester";
+import { Explainer } from "@/components/landing/Explainer";
 import { Guardrails } from "@/components/landing/Guardrails";
 import { Hero } from "@/components/landing/Hero";
 import { Intro } from "@/components/landing/Intro";
@@ -18,6 +19,7 @@ export default function Home() {
         <Intro />
         <Stages />
         <Showcase />
+        <Explainer />
         <Guardrails />
         <BoundaryTester />
         <Letter />

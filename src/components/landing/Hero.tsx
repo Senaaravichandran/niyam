@@ -40,7 +40,7 @@ export function Hero() {
   return (
     <>
       {/* Desktop and tablet: pinned stage */}
-      <section ref={section} className="relative hidden lg:block" style={{ height: `${100 + HERO_FRAMES.length * 55}svh` }} aria-label="Introduction">
+      <section ref={section} className="relative hidden lg:block" style={{ height: `${100 + HERO_FRAMES.length * 38}svh` }} aria-label="Introduction">
         <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col overflow-hidden">
           <div className="relative flex-1">
             <h1 className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2" style={{ fontSize: "clamp(36px, 3.8vw, 68px)" }}>
@@ -100,7 +100,9 @@ export function Hero() {
       {/* Phone: the halves stack around the frames */}
       <section className="lg:hidden" aria-label="Introduction">
         <div className="wrap pt-6">
-          <h1 style={{ fontSize: "11vw" }}>Every clause</h1>
+          <h1 style={{ fontSize: "11vw" }}>
+            Every clause<span className="sr-only"> becomes a rule.</span>
+          </h1>
         </div>
         <div className="scrollbar-none mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4">
           {HERO_FRAMES.map((f) => (
@@ -111,9 +113,9 @@ export function Hero() {
           ))}
         </div>
         <div className="wrap mt-5">
-          <h1 className="text-right" style={{ fontSize: "11vw" }}>
+          <p aria-hidden className="ui text-right font-bold leading-[0.98] tracking-[-0.03em]" style={{ fontSize: "11vw" }}>
             becomes a rule.
-          </h1>
+          </p>
           <p className="ui mt-6 text-[16px] leading-[1.5]">
             NIYAM is a team of AI agents that turns an RBI circular into a tested, two-person-approved, live bank rule, and traces every alert back to the sentence that caused it.
           </p>

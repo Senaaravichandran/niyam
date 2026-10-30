@@ -182,8 +182,8 @@ export function createToolServer(ctx: NiyamContext, group: ToolGroup, callerAgen
       tool(
         "appr_verify",
         "Verify two-person approval tokens against the exact rule file",
-        { rule_id: z.string(), yaml: z.string(), tokens: z.array(z.string()) },
-        ({ rule_id, yaml, tokens }) => verifyTwoPerson(tokens, yaml, rule_id),
+        { rule_id: z.string(), yaml: z.string(), tokens: z.array(z.string()), run_id: z.string().optional() },
+        ({ rule_id, yaml, tokens, run_id }) => verifyTwoPerson(tokens, yaml, rule_id, run_id),
       );
       break;
     }

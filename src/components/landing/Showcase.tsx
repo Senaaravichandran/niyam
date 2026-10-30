@@ -7,7 +7,7 @@ import { Synthetic } from "./Fragments";
 function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div data-ui className="bg-bg text-ink">
-      <div className="flex items-center justify-between gap-3 border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+      <div className="flex items-center justify-between gap-3 border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
         <span className="truncate">{title}</span>
         {right ?? <Synthetic />}
       </div>

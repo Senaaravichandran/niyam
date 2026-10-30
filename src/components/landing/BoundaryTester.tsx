@@ -50,7 +50,7 @@ export function BoundaryTester() {
         <div className="mt-16 grid items-end gap-10 lg:grid-cols-[1fr_auto]">
           <p className="ui num font-bold leading-[0.8] tracking-[-0.05em] text-ink" style={{ fontSize: "clamp(110px, 19vw, 320px)" }} aria-live="polite">
             {value.toFixed(2)}
-            <span className="align-baseline font-bold" style={{ fontSize: "0.2em", marginLeft: "0.12em", letterSpacing: "-0.01em" }}>
+            <span className="whitespace-nowrap align-baseline font-bold" style={{ fontSize: "0.2em", marginLeft: "0.12em", letterSpacing: "-0.01em" }}>
               per cent
             </span>
           </p>

@@ -18,7 +18,7 @@ const serif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://niyam-dragorithm.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://niyam-ivory.vercel.app"),
   title: {
     default: "NIYAM: regulatory circular to live rule",
     template: "%s · NIYAM",

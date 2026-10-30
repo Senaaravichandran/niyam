@@ -114,7 +114,7 @@ function Diagram() {
       </div>
       <div className="mt-2 grid gap-2 md:grid-cols-2">
         <p className="bg-bad-soft px-3 py-2 text-[12.5px] text-bad">A2A objection loop: Validator → Author, fix, re-test, at most 3 rounds, then a human</p>
-        <p className="bg-warn-soft px-3 py-2 text-[12.5px] text-warn">Human gate: two signatures over the exact files, then shadow → canary 10% → live, Sentinel rollback</p>
+        <p className="bg-warn-soft px-3 py-2 text-[12.5px] text-warn" /* taste-skill-ignore: "shadow" is the rollout phase */>Human gate: two signatures over the exact files, then shadow → canary 10% → live, Sentinel rollback</p>
       </div>
       <p className="my-2 text-center text-[12px] text-muted">MCP tool calls, allowlisted per agent, checked by client and server</p>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
@@ -216,7 +216,13 @@ export default function ArchitecturePage() {
                     <td className="px-3 py-1.5 text-muted">{TOOL_SERVER[t]}</td>
                     {AGENTS.map((a) => (
                       <td key={a.id} className="px-2 py-1.5 text-center">
-                        {ALLOWLIST[a.id].includes(t) ? <span className="font-bold text-ok">✓</span> : <span className="text-surface-2">·</span>}
+                        {ALLOWLIST[a.id].includes(t) ? (
+                          <span className="inline-block h-2.5 w-2.5 bg-ok" title="allowed">
+                            <span className="sr-only">allowed</span>
+                          </span>
+                        ) : (
+                          <span className="sr-only">not allowed</span>
+                        )}
                       </td>
                     ))}
                   </tr>

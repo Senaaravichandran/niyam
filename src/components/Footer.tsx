@@ -9,6 +9,8 @@ export function Footer({ credits = [] as (keyof typeof PICTURES)[] }) {
         <ul className="m-0 flex flex-wrap gap-x-6 gap-y-1 p-0">
           {[
             { href: "/console", label: "Console" },
+            { href: "/try", label: "Try a circular" },
+            { href: "/jatayu", label: "Jatayu" },
             { href: "/architecture", label: "Architecture" },
             { href: "/research", label: "Research" },
             { href: REPO_URL, label: "Source" },

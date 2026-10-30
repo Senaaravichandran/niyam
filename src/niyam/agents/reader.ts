@@ -39,14 +39,14 @@ export function defaultScope(text: string): EntityType[] {
 }
 
 export function segment(circularRef: string, text: string, entity: EntityType) {
-  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const lines = text.slice(0, 60_000).split(/\r?\n/).map((l) => l.trim().slice(0, 4000));
   const paras: { number: string; heading?: string; text: string }[] = [];
   let current: { number: string; heading?: string; text: string } | null = null;
   let parentNum = "";
   let parentHeading = "";
 
   for (const line of lines) {
-    const top = line.match(/^(\d+)\.\s+([^.]+)\.\s*(.*)$/);
+    const top = line.length > 4000 ? null : line.match(/^(\d{1,3})\. ([^.\s][^.]{0,200})\.\s?(.*)$/);
     const sub = line.match(/^\(([a-z])\)\s+(.*)$/);
     if (top) {
       parentNum = top[1];

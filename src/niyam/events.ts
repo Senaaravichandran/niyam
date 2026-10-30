@@ -124,4 +124,7 @@ export interface ReleaseBundle {
   impact: ImpactSummary;
   testsPassed: number;
   testsTotal: number;
+  /** Server HMAC over the whole pack; approvals and releases refuse unsigned or altered packs. */
+  signature?: string;
+  draftHashes?: Record<string, string>;
 }

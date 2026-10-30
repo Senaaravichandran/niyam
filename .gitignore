@@ -36,3 +36,8 @@ assets/
 
 # browser test artefacts
 .playwright-mcp/
+
+.vercel
+
+# the explainer shown on the site
+!public/media/*.mp4

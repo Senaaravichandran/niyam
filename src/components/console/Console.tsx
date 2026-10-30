@@ -19,6 +19,12 @@ import {
   ThreadPanel,
   Timeline,
 } from "./Panels";
+import { AgentMesh } from "./AgentMesh";
+import { AuditPack } from "./AuditPack";
+import { GraphPanel } from "./GraphPanel";
+import { ImpactNarrative } from "./ImpactNarrative";
+import { WhatIf } from "./WhatIf";
+import { PolicyRedline } from "./PolicyRedline";
 import { initialState, reducer, streamEvents } from "./state";
 
 interface Status {
@@ -28,14 +34,19 @@ interface Status {
 }
 
 const NAV = [
+  ["mesh", "Agent mesh"],
   ["circular", "Circular"],
   ["obligations", "Obligations"],
   ["mapping", "Mapping"],
+  ["redline", "Policy redline"],
   ["drafts", "Drafts and tests"],
   ["backtest", "Backtest"],
+  ["whatif", "What if"],
   ["approval", "Approval"],
   ["rollout", "Rollout"],
   ["thread", "Golden Thread"],
+  ["audit", "Audit pack"],
+  ["graph", "Knowledge graph"],
   ["tools", "MCP tools"],
 ] as const;
 
@@ -64,6 +75,7 @@ export function Console() {
     const ac = new AbortController();
     abort.current = ac;
     dispatch({ type: "start" });
+    scrollTo("mesh");
     try {
       await streamEvents("/api/run", { path }, (event) => dispatch({ type: "event", event }), ac.signal);
     } catch (e) {
@@ -78,7 +90,7 @@ export function Console() {
       const res = await fetch("/api/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approverId, drafts: s.bundle.drafts.map((d) => ({ ruleId: d.ruleId, version: d.version, yaml: d.yaml })) }),
+        body: JSON.stringify({ approverId, bundle: s.bundle }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? res.statusText);
@@ -108,16 +120,10 @@ export function Console() {
     }
   }
 
-  // Follow the run: bring each new section into view as it fills.
-  const lastSection = useRef<string | null>(null);
+  // While agents work, the mesh stays in view; when the run stops at the human gate, go to it.
   useEffect(() => {
-    if (s.status !== "running") return;
-    const target = s.backtest ? "approval" : s.drafts.length ? "drafts" : s.mapping ? "mapping" : s.obligations.length ? "obligations" : s.clauses.length ? "circular" : null;
-    if (target && target !== lastSection.current) {
-      lastSection.current = target;
-      scrollTo(target);
-    }
-  }, [s.status, s.clauses.length, s.obligations.length, s.mapping, s.drafts.length, s.backtest]);
+    if (s.status === "awaiting") setTimeout(() => scrollTo("approval"), 300);
+  }, [s.status]);
   useEffect(() => {
     if (s.status === "released" && s.thread) setTimeout(() => scrollTo("thread"), 400);
   }, [s.status, s.thread]);
@@ -223,6 +229,9 @@ export function Console() {
 
         {/* Right: the run, section by section */}
         <main className="space-y-4">
+          <Section id="mesh" title="Agent mesh" aside={<span className="ui text-[13px] text-muted">Conductor, 6 agents, 7 MCP servers · live</span>}>
+            <AgentMesh s={s} />
+          </Section>
           <Section id="circular" title="1 · Circular and applicability" aside={<span className="ui text-[13px] text-muted">Reader</span>}>
             <ClausesPanel s={s} />
           </Section>
@@ -232,11 +241,20 @@ export function Console() {
           <Section id="mapping" title="3 · Rules and policies affected" aside={<span className="ui text-[13px] text-muted">Mapper</span>}>
             <MappingPanel s={s} />
           </Section>
+          <Section id="redline" title="3b · Internal policy redline" aside={<span className="ui text-[13px] text-muted">Mapper · for Compliance</span>}>
+            <PolicyRedline s={s} />
+          </Section>
           <Section id="drafts" title="4 · Drafts, objections and tests" aside={<span className="ui text-[13px] text-muted">Author and Validator</span>}>
             <DraftsPanel s={s} previousYaml={previousYaml} />
           </Section>
           <Section id="backtest" title="5 · Backtest and impact" aside={<span className="ui text-[13px] text-muted">Validator · 90 synthetic days</span>}>
             <BacktestPanel s={s} />
+          </Section>
+          <Section id="whatif" title="5b · Impact in plain words, and what if" aside={<span className="ui text-[13px] text-muted">Deterministic · same compiled SQL</span>}>
+            <div className="space-y-6">
+              <ImpactNarrative s={s} />
+              <WhatIf s={s} />
+            </div>
           </Section>
           <Section id="approval" title="6 · Two-person approval" aside={<span className="ui text-[13px] text-muted">Humans</span>}>
             <ApprovalPanel s={s} onSign={sign} signing={signing} tamper={tamper} setTamper={setTamper} drift={drift} setDrift={setDrift} onRelease={release} />
@@ -247,7 +265,13 @@ export function Console() {
           <Section id="thread" title="8 · Golden Thread" aside={<span className="ui text-[13px] text-muted">Alert to circular</span>}>
             <ThreadPanel s={s} />
           </Section>
-          <Section id="tools" title="9 · MCP tool calls" aside={<span className="ui text-[13px] text-muted">7 servers, allowlisted</span>}>
+          <Section id="audit" title="9 · Audit pack for inspection" aside={<span className="ui text-[13px] text-muted">Tamper-evident · synthetic</span>}>
+            <AuditPack s={s} />
+          </Section>
+          <Section id="graph" title="10 · Regulatory knowledge graph" aside={<span className="ui text-[13px] text-muted">Click any node</span>}>
+            <GraphPanel />
+          </Section>
+          <Section id="tools" title="11 · MCP tool calls" aside={<span className="ui text-[13px] text-muted">7 servers, allowlisted</span>}>
             <McpPanel s={s} />
           </Section>
         </main>

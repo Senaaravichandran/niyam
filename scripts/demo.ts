@@ -89,7 +89,7 @@ async function main() {
   console.log(C.bold("\nHuman gate"));
   const tokens: Record<string, string[]> = {};
   for (const d of bundle.drafts) {
-    tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a).token);
+    tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a, undefined, bundle.runId).token);
   }
   for (const a of APPROVERS) console.log(`  signed by ${a.name}, ${a.role}`);
 

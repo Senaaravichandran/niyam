@@ -44,7 +44,7 @@ describe("end to end: circular to live rule and back", () => {
 
     // Release with two approvers and injected drift
     const tokens: Record<string, string[]> = {};
-    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a).token);
+    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a, undefined, bundle.runId).token);
     const relEvents: RunEvent[] = [];
     const ctx2 = await createContext({ emit: (e) => relEvents.push(e) });
     const res = await runRelease(ctx2, { bundle, tokens, injectDrift: true });
@@ -66,7 +66,7 @@ describe("end to end: circular to live rule and back", () => {
     const ctx = await createContext();
     const bundle = await runProposal(ctx);
     const tokens: Record<string, string[]> = {};
-    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a).token);
+    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a, undefined, bundle.runId).token);
     const res = await runRelease(await createContext(), { bundle, tokens, injectDrift: false });
     expect(res.ok).toBe(true);
     expect(res.rolledBack).toEqual([]);
@@ -76,7 +76,7 @@ describe("end to end: circular to live rule and back", () => {
     const ctx = await createContext();
     const bundle = await runProposal(ctx);
     const tokens: Record<string, string[]> = {};
-    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a).token);
+    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a, undefined, bundle.runId).token);
     const tampered = { ...bundle, drafts: bundle.drafts.map((d) => (d.ruleId === "SYN-EXP-012" ? { ...d, yaml: d.yaml.replace("value: 12", "value: 13") } : d)) };
     const res = await runRelease(await createContext(), { bundle: tampered, tokens, injectDrift: false });
     expect(res.ok).toBe(false);

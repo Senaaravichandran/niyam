@@ -53,7 +53,7 @@ export async function runReleaseAgent(ctx: NiyamContext, tools: AgentTools, inpu
   for (const d of bundle.drafts) {
     const v = await tools.call<{ ok: boolean; reason?: string; results: { ok: boolean; payload?: ApprovalPayload; reason?: string }[] }>(
       "appr_verify",
-      { rule_id: d.ruleId, yaml: d.yaml, tokens: tokens[d.ruleId] ?? [] },
+      { rule_id: d.ruleId, yaml: d.yaml, tokens: tokens[d.ruleId] ?? [], run_id: bundle.runId },
     );
     (tokens[d.ruleId] ?? []).forEach((t, i) => {
       const p = v.results[i]?.payload;
@@ -118,7 +118,8 @@ export async function runReleaseAgent(ctx: NiyamContext, tools: AgentTools, inpu
         perRule[draft.ruleId] = { observed: v1rows.length, band: [0, 0], z: 0, drift: false, mode: "rolled_back (v1)" };
         continue;
       }
-      const f = forecast.get(draft.ruleId)!;
+      const f = forecast.get(draft.ruleId);
+      if (!f) throw new Error(`No backtest forecast for ${draft.ruleId}`);
       const check = await tools.call<{ band: [number, number]; z: number; drift: boolean }>("deploy_sentinel_check", {
         rule_id: draft.ruleId,
         observed: today.length,

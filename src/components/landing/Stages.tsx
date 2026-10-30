@@ -24,7 +24,7 @@ const TAG = {
 function ReadUI() {
   return (
     <div data-ui className="bg-bg">
-      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
         <span>Reader · RBI-SYN-2026-017 for a UCB</span>
         <Synthetic />
       </div>
@@ -44,7 +44,7 @@ function ReadUI() {
 function ProveUI() {
   return (
     <div data-ui className="bg-bg">
-      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
         <span>A2A task · Validator → Author</span>
         <span className="font-semibold text-bad">Objection</span>
       </div>
@@ -73,7 +73,7 @@ function SignUI() {
   ];
   return (
     <div data-ui className="bg-bg">
-      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
         <span>Approval pack · SYN-EXP-012 v2</span>
         <Synthetic />
       </div>
@@ -95,9 +95,9 @@ function SignUI() {
 }
 
 const DAYS = [
-  ["shadow", 7],
-  ["shadow", 7],
-  ["shadow", 7],
+  ["shadow", 7], // taste-skill-ignore: shadow mode, not a box shadow
+  ["shadow", 7], // taste-skill-ignore: shadow mode, not a box shadow
+  ["shadow", 7], // taste-skill-ignore: shadow mode, not a box shadow
   ["canary", 7],
   ["canary", 7],
   ["canary", 7],
@@ -112,7 +112,7 @@ function WatchUI() {
   const band: [number, number] = [3.2, 9.0];
   return (
     <div data-ui className="bg-bg">
-      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+      <div className="flex items-center justify-between border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
         <span>Sentinel · SYN-EXP-012 daily alerts</span>
         <span className="font-semibold text-bad">Rolled back to v1</span>
       </div>
@@ -128,7 +128,7 @@ function WatchUI() {
               <div key={i} className="flex flex-1 flex-col items-center justify-end gap-1">
                 <span className={`num text-[11px] ${i === 9 ? "font-semibold text-bad" : "text-muted"}`}>{n}</span>
                 <div
-                  className={i === 9 ? "w-full bg-bad" : phase === "shadow" ? "w-full bg-surface-2" : phase === "canary" ? "w-full bg-[#9db4ee]" : "w-full bg-accent"}
+                  className={i === 9 ? "w-full bg-bad" : phase === "shadow" ? "w-full bg-surface-2" : phase === "canary" ? "w-full bg-[#9db4ee]" : "w-full bg-accent"} /* taste-skill-ignore: "shadow" is the rollout phase */
                   style={{ height: `${(n / max) * 118}px` }}
                 />
               </div>

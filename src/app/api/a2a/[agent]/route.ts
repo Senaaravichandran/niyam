@@ -6,12 +6,14 @@ import { runMapper } from "@/niyam/agents/mapper";
 import { runReader } from "@/niyam/agents/reader";
 import { createContext } from "@/niyam/context";
 import { registerSkills } from "@/niyam/pipeline";
+import { allowRequest, clientIp, tooMany } from "../../_lib/sse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 function baseUrl(req: Request) {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   const u = new URL(req.url);
   const host = req.headers.get("x-forwarded-host") ?? u.host;
   const proto = req.headers.get("x-forwarded-proto") ?? u.protocol.replace(":", "");
@@ -33,6 +35,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ agent: s
 export async function POST(req: Request, { params }: { params: Promise<{ agent: string }> }) {
   const { agent } = await params;
   if (!isAgent(agent)) return Response.json({ error: "Unknown agent" }, { status: 404 });
+  if (!allowRequest(clientIp(req), 40)) return tooMany();
+  if (Number(req.headers.get("content-length") ?? "0") > 100_000) return Response.json({ error: "Payload too large" }, { status: 413 });
   const text = await req.text();
   if (text.length > 100_000) return Response.json({ error: "Payload too large" }, { status: 413 });
   let body: unknown;

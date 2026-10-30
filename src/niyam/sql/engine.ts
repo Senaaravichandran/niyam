@@ -58,6 +58,8 @@ export async function createDb(loans: LoanRow[], capital: CapitalRow[]): Promise
   for (const c of capital) cap.run([c.as_of, c.tier1_amt]);
   cap.free();
   db.exec("COMMIT");
+  // Rule queries never write: the sandbox is read-only once loaded.
+  db.exec("PRAGMA query_only = 1");
   return db;
 }
 
@@ -67,15 +69,29 @@ export interface AlertRow {
   metric_value: number;
 }
 
+/** Strips SQL comments and the trailing semicolon, and refuses anything but one SELECT. */
+function singleStatement(sql: string): string {
+  const body = sql
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("--"))
+    .join("\n")
+    .trim()
+    .replace(/;\s*$/, "");
+  if (body.includes(";")) throw new Error("Refused: a compiled rule must be a single SQL statement");
+  if (!/^(SELECT|WITH)\b/i.test(body)) throw new Error("Refused: a compiled rule must be a SELECT");
+  return body;
+}
+
+/** Runs exactly one read-only statement and returns its rows. */
 export function runQuery(db: Database, sql: string): AlertRow[] {
-  const res = db.exec(sql);
-  if (!res.length) return [];
-  const { columns, values } = res[0];
-  return values.map((v) => {
-    const o: Record<string, unknown> = {};
-    columns.forEach((c, i) => (o[c] = v[i]));
-    return o as unknown as AlertRow;
-  });
+  const stmt = db.prepare(singleStatement(sql));
+  const rows: AlertRow[] = [];
+  try {
+    while (stmt.step()) rows.push(stmt.getAsObject() as unknown as AlertRow);
+  } finally {
+    stmt.free();
+  }
+  return rows;
 }
 
 const g = globalThis as unknown as {

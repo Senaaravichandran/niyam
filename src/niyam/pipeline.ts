@@ -14,6 +14,7 @@ import { LLM_MODEL, llmAvailable } from "./llm/claude";
 import { ToolDeniedError } from "./mcp/client";
 import { ENGINE_LABEL } from "./sql/engine";
 import { buildThread } from "./thread";
+import { signPack, verifyPack } from "./approvals/token";
 import type { Clause, Objection, RuleDraft } from "./types";
 
 export const MAX_OBJECTION_ROUNDS = 3;
@@ -276,6 +277,7 @@ export async function runProposal(ctx: NiyamContext): Promise<ReleaseBundle> {
     testsPassed: ctx.testResults.filter((t) => t.pass).length,
     testsTotal: ctx.testResults.length,
   };
+  Object.assign(bundle, signPack(bundle));
   for (const note of ctx.llmNotes) ctx.emit({ type: "log", level: "info", text: note });
   ctx.emit({ type: "step", id: "human", agent: "human", title: "Two-person approval", status: "blocked", detail: "Waiting for the Chief Compliance Officer and the Head of Risk to sign" });
   ctx.emit({ type: "approval_pack", bundle });
@@ -290,12 +292,26 @@ export async function runRelease(ctx: NiyamContext, input: ReleaseInput) {
   const t0 = performance.now();
   const a2a = new A2AClient(ctx, "conductor");
 
+  // Only packs this server signed can be released, and only unchanged.
+  const pack = verifyPack(input.bundle);
+  if (!pack.ok) {
+    ctx.emit({ type: "approvals_verified", ok: false, reason: pack.reason, approvals: [] });
+    ctx.emit({ type: "step", id: "release", agent: "release", title: "Verify approvals and roll out", status: "warn", detail: `Release refused: ${pack.reason}` });
+    ctx.emit({ type: "done", phase: "release", ms: Math.round(performance.now() - t0) });
+    return { ok: false as const, reason: pack.reason!, approvals: [], alerts: [], commits: {}, rolledBack: [] as string[] };
+  }
+  for (const d of input.bundle.drafts) {
+    if (!/^SYN-[A-Z]{3}-[0-9]{3}$/.test(d.ruleId)) throw new Error("Bundle has an invalid rule id");
+    const parsed = parseRule(d.yaml);
+    if (parsed.rule_id !== d.ruleId || parsed.version !== d.version) throw new Error(`Bundle ${d.ruleId}: id or version does not match its file`);
+  }
+
   // Rehydrate the run from the bundle, but re-derive clause text from the server's own copy of the
   // circular so a tampered bundle cannot change what the Golden Thread quotes.
   const trusted = segment(ctx.circular.ref, ctx.circular.text, ctx.profile.entityType).clauses;
   for (const ob of input.bundle.obligations) {
     const c = trusted.find((x) => x.id === ob.clauseId);
-    if (!c || !c.text.includes(ob.span)) throw new Error(`Bundle obligation ${ob.id} does not match the circular text`);
+    if (!c || !ob.span || c.text.slice(ob.spanStart, ob.spanEnd) !== ob.span) throw new Error(`Bundle obligation ${ob.id} does not match the circular text`);
   }
   input.bundle.clauses = trusted;
   ctx.clauses = trusted;

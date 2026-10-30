@@ -6,9 +6,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ agent: s
   const { agent } = await params;
   if (!AGENTS.some((a) => a.id === agent)) return Response.json({ error: "Unknown agent" }, { status: 404 });
   const u = new URL(req.url);
-  const host = req.headers.get("x-forwarded-host") ?? u.host;
-  const proto = req.headers.get("x-forwarded-proto") ?? u.protocol.replace(":", "");
-  return Response.json(buildCard(agent as AgentId, `${proto}://${host}`), {
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? `${u.protocol}//${u.host}`;
+  return Response.json(buildCard(agent as AgentId, base), {
     headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=300" },
   });
 }

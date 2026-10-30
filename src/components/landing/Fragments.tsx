@@ -19,7 +19,7 @@ export function Synthetic({ tone = "light" }: { tone?: "light" | "dark" }) {
 
 function Head({ left, right }: { left: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted">
+    <div className="flex items-center justify-between gap-3 border-b border-surface-2 px-4 py-2.5 text-[12.5px] text-muted" /* taste-skill-ignore: interface fragment chrome (data-ui) */>
       <span className="truncate">{left}</span>
       {right ?? <Synthetic />}
     </div>
@@ -127,7 +127,7 @@ export function BoundaryFragment() {
               <td className="num px-2 py-1.5 text-ink">{input}</td>
               <td className="px-4 py-1.5 text-right">
                 <span className="text-ok">
-                  {fired ? "fires" : "quiet"} {expect === fired ? "✓" : "✗"}
+                  {fired ? "fires" : "quiet"} · {expect === fired ? "pass" : "fail"}
                 </span>
               </td>
             </tr>

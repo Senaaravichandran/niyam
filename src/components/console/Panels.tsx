@@ -199,7 +199,7 @@ export function ObligationsPanel({ s }: { s: RunState }) {
               <td className="px-3 py-2 text-ink">
                 “{o.span}”
                 <span className="block text-ok">
-                  ✓ chars {o.spanStart} to {o.spanEnd} · {o.extractedBy}
+                  Verified: chars {o.spanStart} to {o.spanEnd} · {o.extractedBy}
                 </span>
               </td>
             </tr>
@@ -330,7 +330,7 @@ export function DraftsPanel({ s, previousYaml }: { s: RunState; previousYaml: Re
                           <td className="px-3 py-1 text-ink">{t.name}</td>
                           <td className="num px-2 py-1 text-muted">{t.given}</td>
                           <td className={`px-3 py-1 text-right font-semibold ${t.pass ? "text-ok" : "text-bad"}`}>
-                            {t.fired ? "fires" : "quiet"} {t.pass ? "✓" : "✗"}
+                            {t.fired ? "fires" : "quiet"} · {t.pass ? "pass" : "fail"}
                           </td>
                         </tr>
                       ))}
@@ -562,7 +562,7 @@ export function RolloutPanel({ s }: { s: RunState }) {
                   )}
                   <span className={`num relative text-center text-[10.5px] ${r.drift ? "font-bold text-bad" : "text-muted"}`}>{r.observed}</span>
                   <div
-                    className={`relative ${r.drift ? "bg-bad" : rolled ? "bg-surface-2" : d.phase === "shadow" ? "bg-[#9aa8bd]" : d.phase === "canary" ? "bg-[#7f9fe8]" : "bg-accent"}`}
+                    className={`relative ${r.drift ? "bg-bad" : rolled ? "bg-surface-2" : d.phase === "shadow" ? "bg-[#9aa8bd]" : d.phase === "canary" ? "bg-[#7f9fe8]" : "bg-accent"}`} /* taste-skill-ignore: "shadow" is the rollout phase */
                     style={{ height: `${Math.max(2, (r.observed / maxObs) * 100)}%` }}
                   />
                 </div>
