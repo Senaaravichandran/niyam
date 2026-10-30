@@ -334,9 +334,6 @@ code,
   animation: splash-in 700ms var(--ease-out) both;
   animation-delay: var(--d, 0ms);
 }
-html.intro-seen .splash {
-  display: none;
-}
 @media (prefers-reduced-motion: reduce) {
   .splash-in {
     animation: none;
