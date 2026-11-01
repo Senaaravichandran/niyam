@@ -35,6 +35,13 @@ export async function runMapper(ctx: NiyamContext, tools: AgentTools): Promise<M
       }
       continue;
     }
+    if (!ob.metric) {
+      result.manualControls.push({
+        obligationId: ob.id,
+        control: `Not measurable from this bank's data (para ${ob.clauseNumber}: "${ob.span}"): routed to Compliance as a manual control until the semantic model has this measure`,
+      });
+      continue;
+    }
     const rules = await tools.call<{ ruleId: string; title: string }[]>("kg_find_rules", { metric: ob.metric });
     if (rules.length) {
       for (const r of rules) {
@@ -45,12 +52,15 @@ export async function runMapper(ctx: NiyamContext, tools: AgentTools): Promise<M
         result.modify.push({
           ruleId: r.ruleId,
           obligationId: ob.id,
-          change: `Threshold ${curValue ?? "?"} to ${ob.threshold}; circular says "${ob.comparatorPhrase}" (fire on ${ob.operator}), live rule fires on ${curOp ?? "?"}`,
+          change:
+            Number(curValue) === ob.threshold && curOp === ob.operator
+              ? `Already at ${ob.threshold} and fires on ${ob.operator}; re-anchor the rule to this circular's clause`
+              : `Threshold ${curValue ?? "?"} to ${ob.threshold}; circular says "${ob.comparatorPhrase}" (fire on ${ob.operator}), live rule fires on ${curOp ?? "?"}`,
         });
         await tools.call("kg_link_mapping", { from: ob.id, to: r.ruleId, type: "MAPPED_TO", note: "MODIFY" });
 
         // Policies that implement this rule and permit more than the new limit are conflicts.
-        const policies = await tools.call<PolicyClause[]>("kg_find_policies", { rule_id: r.ruleId, metric: ob.metric });
+        const policies: PolicyClause[] = await tools.call<PolicyClause[]>("kg_find_policies", { rule_id: r.ruleId, metric: ob.metric });
         for (const p of policies) {
           if (p.permits && p.permits.metric === ob.metric && p.permits.upTo > (ob.threshold ?? Infinity)) {
             const constraint = policyConstraints[0];

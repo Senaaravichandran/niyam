@@ -41,7 +41,12 @@ export class AgentTools {
     const res = await client.callTool({ name: tool, arguments: args });
     const ms = performance.now() - t0;
     const text = (res.content as { type: string; text: string }[])[0]?.text ?? "null";
-    const data = JSON.parse(text);
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text };
+    }
     if (res.isError) {
       this.record({ at: Date.now(), agent: this.agent, server, tool, allowed: true, ms, error: data.error });
       throw new Error(data.error);

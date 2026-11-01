@@ -21,6 +21,8 @@ import {
 } from "./Panels";
 import { AgentMesh } from "./AgentMesh";
 import { LlmPanel } from "./LlmPanel";
+import { Narrator, narrate } from "./Narrator";
+import { DEFAULT_SETUP, RunSetup, type SetupValue } from "./RunSetup";
 import { AuditPack } from "./AuditPack";
 import { GraphPanel } from "./GraphPanel";
 import { ImpactNarrative } from "./ImpactNarrative";
@@ -35,6 +37,7 @@ interface Status {
 }
 
 const NAV = [
+  ["setup", "Setup"],
   ["mesh", "Agent mesh"],
   ["claude", "Claude live"],
   ["circular", "Circular"],
@@ -59,7 +62,10 @@ export function Console() {
   const [signing, setSigning] = useState<string | null>(null);
   const [tamper, setTamper] = useState(false);
   const [drift, setDrift] = useState(true);
+  const [setup, setSetup] = useState<SetupValue>(DEFAULT_SETUP);
+  const [follow, setFollow] = useState(true);
   const abort = useRef<AbortController | null>(null);
+  const header = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/status")
@@ -70,16 +76,22 @@ export function Console() {
 
   const previousYaml = useMemo(() => Object.fromEntries(EXISTING_RULES.map((r) => [r.rule_id, toYaml(r)])), []);
 
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Scroll a section to just below the sticky header, whatever its current height.
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const offset = (header.current?.getBoundingClientRect().bottom ?? 0) + 12;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: "smooth" });
+  };
 
   async function run() {
     abort.current?.abort();
     const ac = new AbortController();
     abort.current = ac;
     dispatch({ type: "start" });
-    scrollTo(path === "llm" ? "claude" : "mesh");
+    const circular = { ref: setup.ref, text: setup.text, synthetic: setup.sampleId === "synthetic" };
     try {
-      await streamEvents("/api/run", { path }, (event) => dispatch({ type: "event", event }), ac.signal);
+      await streamEvents("/api/run", { path, entityType: setup.entity, circular }, (event) => dispatch({ type: "event", event }), ac.signal);
     } catch (e) {
       if ((e as Error).name !== "AbortError") dispatch({ type: "error", message: (e as Error).message });
     }
@@ -108,11 +120,11 @@ export function Console() {
     if (!s.bundle) return;
     const tokens: Record<string, string[]> = {};
     for (const a of s.approvals) (tokens[a.ruleId] ??= []).push(a.token);
+    // Tamper test: raise the first signed rule's limit by one after both approvals.
     const bundle: ReleaseBundle = tamper
-      ? { ...s.bundle, drafts: s.bundle.drafts.map((d) => (d.ruleId === "SYN-EXP-012" ? { ...d, yaml: d.yaml.replace("value: 12", "value: 13") } : d)) }
+      ? { ...s.bundle, drafts: s.bundle.drafts.map((d, i) => (i === 0 ? { ...d, yaml: d.yaml.replace(/value: ([\d.]+)/, (_, v) => `value: ${Number(v) + 1}`) } : d)) }
       : s.bundle;
     dispatch({ type: "start_release" });
-    setTimeout(() => scrollTo("rollout"), 150);
     const ac = new AbortController();
     abort.current = ac;
     try {
@@ -122,13 +134,19 @@ export function Console() {
     }
   }
 
-  // While agents work, the mesh stays in view; when the run stops at the human gate, go to it.
+  // Follow along: bring the section the narrator is talking about into view as the run moves.
+  const narration = narrate(s);
   useEffect(() => {
-    if (s.status === "awaiting") setTimeout(() => scrollTo("approval"), 300);
-  }, [s.status]);
-  useEffect(() => {
-    if (s.status === "released" && s.thread) setTimeout(() => scrollTo("thread"), 400);
-  }, [s.status, s.thread]);
+    if (!follow || s.status === "idle") return;
+    // Scroll once quickly, then again after charts above the target have finished laying out.
+    const t1 = setTimeout(() => scrollTo(narration.section), 250);
+    const t2 = setTimeout(() => scrollTo(narration.section), 1100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [narration.section, follow]);
 
   const running = s.status === "running" || s.status === "releasing";
   const llmOk = status?.llm.available ?? false;
@@ -137,12 +155,12 @@ export function Console() {
   return (
     <div className="min-h-svh bg-surface">
       {/* Control bar */}
-      <div className="sticky top-16 z-20 bg-surface">
+      <div ref={header} className="sticky top-16 z-20 bg-surface">
         <div className="wrap flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0">
             <h1 className="text-[clamp(22px,2.2vw,30px)] tracking-[-0.03em]">Pipeline console</h1>
             <p className="ui truncate text-[13px] text-muted">
-              Circular RBI-SYN-2026-017 · Demo Urban Co-operative Bank · all data synthetic
+              {setup.ref} · {setup.entity === "UCB" ? "Demo Urban Co-operative Bank" : `Demo ${setup.entity}`} · synthetic bank data
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -180,11 +198,12 @@ export function Console() {
             </button>
           ))}
         </nav>
+        <Narrator s={s} follow={follow} setFollow={setFollow} />
       </div>
 
       <div className="wrap grid gap-4 pb-24 pt-2 lg:grid-cols-[340px_1fr]">
         {/* Left: run status */}
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[184px] lg:max-h-[calc(100svh-200px)] lg:self-start lg:overflow-y-auto">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[290px] lg:max-h-[calc(100svh-305px)] lg:self-start lg:overflow-y-auto">
           <div className="bg-bg p-4">
             <div className="ui flex flex-wrap gap-1.5">
               <Chip tone={s.status === "released" ? "ok" : s.status === "refused" || s.status === "error" ? "bad" : s.status === "awaiting" ? "accent" : running ? "warn" : "muted"}>
@@ -230,7 +249,10 @@ export function Console() {
         </aside>
 
         {/* Right: the run, section by section */}
-        <main className="min-w-0 space-y-4">
+        <main className="min-w-0 space-y-5">
+          <Section id="setup" title="Set up the run" aside={<span className="ui text-[13px] text-muted">Your bank and the circular it just received</span>}>
+            <RunSetup value={setup} onChange={setSetup} disabled={running} />
+          </Section>
           <Section id="mesh" title="Agent mesh" aside={<span className="ui text-[13px] text-muted">Conductor, 6 agents, 7 MCP servers · live</span>}>
             <AgentMesh s={s} />
           </Section>

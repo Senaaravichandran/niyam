@@ -11,13 +11,13 @@ import type { RunState } from "./state";
 export function Section({ id, title, aside, children }: { id: string; title: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-20 bg-bg" aria-labelledby={`${id}-h`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3 px-5 pb-3 pt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 px-6 pb-4 pt-6">
         <h2 id={`${id}-h`} className="text-[22px] tracking-[-0.025em]">
           {title}
         </h2>
         {aside}
       </div>
-      <div className="px-5 pb-6">{children}</div>
+      <div className="px-6 pb-8">{children}</div>
     </section>
   );
 }
@@ -453,6 +453,7 @@ export function ApprovalPanel({
 }) {
   const bundle = s.bundle;
   if (!bundle) return <Empty>The pipeline stops here and waits for two people. Nothing reaches production without them.</Empty>;
+  if (!bundle.drafts.length) return <Empty>This circular needs no rule changes for your bank, so there is nothing to sign. The mapping above lists any manual controls for Compliance.</Empty>;
   const signedBy = (id: string) => s.approvals.filter((a) => a.payload.approver_id === id);
   const both = APPROVER_LIST.every((a) => signedBy(a.id).length === bundle.drafts.length);
   const releasing = s.status === "releasing";
@@ -504,8 +505,8 @@ export function ApprovalPanel({
         <label className="flex cursor-pointer items-start gap-3 bg-surface p-3">
           <input type="checkbox" checked={tamper} onChange={(e) => setTamper(e.target.checked)} className="mt-1 h-4 w-4 accent-[#b91c1c]" />
           <span>
-            <b className="text-ink">Tamper test: edit SYN-EXP-012 after signing</b>
-            <span className="block text-[13px] text-muted">Changes the limit from 12 to 13 in the file sent to Release. Expect a refusal.</span>
+            <b className="text-ink">Tamper test: edit a signed rule before release</b>
+            <span className="block text-[13px] text-muted">Raises the first rule&apos;s limit by one in the file sent to Release. Expect a refusal.</span>
           </span>
         </label>
       </fieldset>

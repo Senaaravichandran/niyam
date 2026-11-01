@@ -68,6 +68,7 @@ export async function createContext(opts: {
   runId?: string;
   path?: ExecutionPath;
   circular?: CircularSource;
+  profile?: BankProfile;
   emit?: (e: RunEvent) => void;
 } = {}): Promise<NiyamContext> {
   const circular = opts.circular ?? CIRCULAR;
@@ -85,7 +86,7 @@ export async function createContext(opts: {
     runId: opts.runId ?? `RUN-${Date.now().toString(36).toUpperCase()}`,
     path: opts.path ?? "rule-based",
     circular,
-    profile: BANK_PROFILE,
+    profile: opts.profile ?? BANK_PROFILE,
     graph,
     repo,
     seedCommit: commit,

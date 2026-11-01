@@ -10,7 +10,7 @@ export interface CircularSource {
   issuedOn: string;
   issuer: string;
   amends: string;
-  synthetic: true;
+  synthetic: boolean;
   text: string;
 }
 

@@ -156,6 +156,8 @@ export interface SignablePack {
   impact: unknown;
   testsPassed: number;
   testsTotal: number;
+  circular?: { ref: string; title: string; text: string; synthetic: boolean };
+  entityType?: string;
 }
 
 function packBody(p: SignablePack) {
@@ -169,6 +171,8 @@ function packBody(p: SignablePack) {
     impact: p.impact,
     testsPassed: p.testsPassed,
     testsTotal: p.testsTotal,
+    circular: p.circular ? { ref: p.circular.ref, title: p.circular.title, sha256: sha256(p.circular.text), synthetic: p.circular.synthetic } : null,
+    entityType: p.entityType ?? null,
   });
 }
 

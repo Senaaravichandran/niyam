@@ -277,6 +277,8 @@ export async function runProposal(ctx: NiyamContext): Promise<ReleaseBundle> {
     testsPassed: ctx.testResults.filter((t) => t.pass).length,
     testsTotal: ctx.testResults.length,
   };
+  bundle.circular = { ref: ctx.circular.ref, title: ctx.circular.title, text: ctx.circular.text, synthetic: ctx.circular.synthetic };
+  bundle.entityType = ctx.profile.entityType;
   Object.assign(bundle, signPack(bundle));
   for (const note of ctx.llmNotes) ctx.emit({ type: "log", level: "info", text: note });
   ctx.emit({ type: "step", id: "human", agent: "human", title: "Two-person approval", status: "blocked", detail: "Waiting for the Chief Compliance Officer and the Head of Risk to sign" });

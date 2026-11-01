@@ -39,7 +39,9 @@ export function buildThread(
     approvals: approvals.filter((a) => a.ruleId === alert.ruleId).map((a) => a.payload),
     obligation: ob,
     clause: clause && ob ? { number: clause.number, text: clause.text, span: ob.span, start: ob.spanStart, end: ob.spanEnd } : undefined,
-    circular: { ref: CIRCULAR.ref, title: CIRCULAR.title, issuedOn: CIRCULAR.issuedOn, synthetic: true },
+    circular: bundle.circular
+      ? { ref: bundle.circular.ref, title: bundle.circular.title, issuedOn: bundle.circular.ref === CIRCULAR.ref ? CIRCULAR.issuedOn : "as uploaded", synthetic: bundle.circular.synthetic }
+      : { ref: CIRCULAR.ref, title: CIRCULAR.title, issuedOn: CIRCULAR.issuedOn, synthetic: true },
     backtest: impact ? { oldAlerts: impact.oldAlerts, newAlerts: impact.newAlerts, days: bundle.impact.days } : undefined,
   };
 }

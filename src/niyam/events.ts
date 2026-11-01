@@ -130,4 +130,7 @@ export interface ReleaseBundle {
   /** Server HMAC over the whole pack; approvals and releases refuse unsigned or altered packs. */
   signature?: string;
   draftHashes?: Record<string, string>;
+  /** The exact circular this run read, signed into the pack. */
+  circular?: { ref: string; title: string; text: string; synthetic: boolean };
+  entityType?: string;
 }

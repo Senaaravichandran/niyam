@@ -71,6 +71,11 @@ export function generateTests(
   const op = ob.operator;
   const grain = metricById(ob.metric)?.grain;
   const cases: TestCase[] = [];
+  // In-scope fixtures use an entity the obligation covers; the out-of-scope case uses one it does not.
+  const ALL: TestCase["fixture"]["entity"][] = ["UCB", "NBFC-ML", "NBFC-UL", "SCB"];
+  const inScope = ob.scope[0] ?? "UCB";
+  const outOfScope = ALL.find((e) => !ob.scope.includes(e));
+  const scoped = (fx: TestCase["fixture"]) => ({ ...fx, entity: inScope });
   const add = (name: string, given: string, value: number, expectFire: boolean, fx?: TestCase["fixture"]) =>
     cases.push({
       id: `${ruleId}-T${cases.length + 1}`,
@@ -78,15 +83,23 @@ export function generateTests(
       name,
       given,
       expectFire,
-      fixture: fx ?? fixtureFor(ob.metric!, value),
+      fixture: scoped(fx ?? fixtureFor(ob.metric!, value)),
     });
 
   add("Just below the limit", `${(t - 0.01).toFixed(2)}%`, t - 0.01, holds(op, t - 0.01, t));
   add("Exactly on the limit", `${t.toFixed(2)}%`, t, holds(op, t, t));
   add("Just above the limit", `${(t + 0.01).toFixed(2)}%`, t + 0.01, holds(op, t + 0.01, t));
-  const outOfScope = fixtureFor(ob.metric, t + 3);
-  outOfScope.entity = "SCB";
-  add("Out of scope entity", `Scheduled Commercial Bank at ${(t + 3).toFixed(2)}%`, t + 3, false, outOfScope);
+  if (outOfScope) {
+    const fx = fixtureFor(ob.metric, t + 3);
+    cases.push({
+      id: `${ruleId}-T${cases.length + 1}`,
+      ruleId,
+      name: "Out of scope entity",
+      given: `${outOfScope} at ${(t + 3).toFixed(2)}%`,
+      expectFire: false,
+      fixture: { ...fx, entity: outOfScope },
+    });
+  }
 
   if (opts.boardOverrideTest && grain === "group") {
     add(

@@ -38,6 +38,13 @@ export function defaultScope(text: string): EntityType[] {
   return scope.length ? scope : ["UCB"];
 }
 
+/** Addressees named anywhere in the text, else the bank's own entity type. */
+function scopeOrEntity(text: string, entity: EntityType): EntityType[] {
+  const t = text.toLowerCase();
+  const named = /co-operative bank|middle layer|upper layer|scheduled commercial bank/.test(t);
+  return named ? defaultScope(text) : [entity];
+}
+
 export function segment(circularRef: string, text: string, entity: EntityType) {
   const lines = text.slice(0, 60_000).split(/\r?\n/).map((l) => l.trim().slice(0, 4000));
   const paras: { number: string; heading?: string; text: string }[] = [];
@@ -67,8 +74,18 @@ export function segment(circularRef: string, text: string, entity: EntityType) {
     }
   }
 
+  // Text without "4." / "(a)" numbering: treat each paragraph (or sentence) as a clause.
+  if (!paras.length) {
+    const blocks = text
+      .split(/\r?\n\s*\r?\n/)
+      .map((b) => b.replace(/\s+/g, " ").trim())
+      .filter((b) => b.length > 25 && !/^(yours faithfully|madam|sir)/i.test(b));
+    const units = blocks.length > 1 ? blocks : (blocks[0] ?? "").split(/(?<=\.)\s+(?=[A-Z])/).filter((u) => u.length > 25);
+    units.slice(0, 60).forEach((u, i) => paras.push({ number: String(i + 1), heading: undefined, text: u }));
+  }
+
   const applicabilityPara = paras.find((p) => /^applicability/i.test(p.heading ?? ""));
-  const baseScope = applicabilityPara ? defaultScope(applicabilityPara.text) : (["UCB"] as EntityType[]);
+  const baseScope = applicabilityPara ? defaultScope(applicabilityPara.text) : scopeOrEntity(text, entity);
   const effective = paras.map((p) => parseEffectiveDate(p.text)).find(Boolean);
   const slug = circularRef.replace(/[^0-9]/g, "").slice(-3) || "000";
 
