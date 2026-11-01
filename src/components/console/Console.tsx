@@ -184,7 +184,7 @@ export function Console() {
 
       <div className="wrap grid gap-4 pb-24 pt-2 lg:grid-cols-[340px_1fr]">
         {/* Left: run status */}
-        <aside className="space-y-4 lg:sticky lg:top-[184px] lg:max-h-[calc(100svh-200px)] lg:self-start lg:overflow-y-auto">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[184px] lg:max-h-[calc(100svh-200px)] lg:self-start lg:overflow-y-auto">
           <div className="bg-bg p-4">
             <div className="ui flex flex-wrap gap-1.5">
               <Chip tone={s.status === "released" ? "ok" : s.status === "refused" || s.status === "error" ? "bad" : s.status === "awaiting" ? "accent" : running ? "warn" : "muted"}>
@@ -230,7 +230,7 @@ export function Console() {
         </aside>
 
         {/* Right: the run, section by section */}
-        <main className="space-y-4">
+        <main className="min-w-0 space-y-4">
           <Section id="mesh" title="Agent mesh" aside={<span className="ui text-[13px] text-muted">Conductor, 6 agents, 7 MCP servers · live</span>}>
             <AgentMesh s={s} />
           </Section>

@@ -11,7 +11,7 @@ function Stream({ text, live }: { text: string; live: boolean }) {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [text]);
   return (
-    <pre ref={ref} className="m-0 max-h-[180px] overflow-y-auto whitespace-pre-wrap break-words bg-navy px-4 py-3 text-[12px] leading-[1.55] text-on-navy">
+    <pre ref={ref} className="m-0 max-h-[180px] overflow-y-auto whitespace-pre-wrap bg-navy px-4 py-3 [overflow-wrap:anywhere] text-[12px] leading-[1.55] text-on-navy">
       {text || (live ? "Waiting for the first tokens…" : "")}
       {live && <span className="pulse ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 bg-[#9db4ee]" />}
     </pre>
