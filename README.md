@@ -2,7 +2,7 @@
 
 **Every clause becomes a rule.** NIYAM turns a regulatory circular into a tested, two-person-approved, live bank rule, and traces every alert back to the sentence that caused it.
 
-Team Dragorithm · Sri Manakula Vinayagar Engineering College, Puducherry · Virtusa Jatayu Season 5, FDS NA Use Case 2: *Regulatory Circular to Live Rule Engine*.
+Team Dragorithm · Sri Manakula Vinayagar Engineering College, Puducherry · Virtusa Jatayu Season 6, FDS NA Use Case 2: *Regulatory Circular to Live Rule Engine*.
 
 **Live:** https://niyam-virtusa.vercel.app · **Submission pack:** [`submission/`](submission/) (deck, deck as PDF, explainer video, architecture, research write-up `niyam.html`)
 

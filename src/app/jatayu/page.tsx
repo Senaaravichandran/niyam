@@ -9,7 +9,7 @@ import { REPO_URL, TEAM } from "@/content/site";
 export const metadata: Metadata = {
   title: "Jatayu submission",
   description:
-    "NIYAM by Team Dragorithm for Virtusa Jatayu Season 5, FDS NA Use Case 2: the explainer video, the official use case, and every workflow step, data source, stack item and guardrail mapped to running code.",
+    "NIYAM by Team Dragorithm for Virtusa Jatayu Season 6, FDS NA Use Case 2: the explainer video, the official use case, and every workflow step, data source, stack item and guardrail mapped to running code.",
 };
 
 const VIDEO = "/media/niyam-explainer.mp4";
@@ -43,7 +43,7 @@ export default function JatayuPage() {
         <header className="wrap grid gap-10 pb-20 pt-20 lg:grid-cols-12 lg:pt-28">
           <div className="lg:col-span-7">
             <h1 data-reveal className="text-[clamp(40px,5vw,80px)]">
-              NIYAM for Virtusa Jatayu Season 5
+              NIYAM for Virtusa Jatayu Season 6
             </h1>
             <p data-reveal style={{ ["--i" as string]: 1 }} className="mt-8 max-w-[52ch] text-[20px] leading-[1.5]">
               NIYAM turns a regulatory circular into a tested, two-person-approved, monitored bank rule, and traces every alert back to the sentence that caused it. This page answers the use case point by point, with a link to see each one running.

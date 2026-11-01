@@ -77,6 +77,7 @@ export async function authorDraft(
   if (ctx.path === "llm" && llmAvailable()) {
     try {
       const current = previousYaml ? parseRule(previousYaml) : undefined;
+      let callId = "";
       const out = await llmDraft({
         obligation: ob,
         existingYaml: previousYaml,
@@ -84,12 +85,25 @@ export async function authorDraft(
         version: current ? current.version + 1 : 1,
         objection,
         previousDraft: existingDraft?.yaml,
+      }, (e) => {
+        callId = e.id;
+        ctx.emit({ type: "llm", ...e });
       });
-      rule = { ...parseRule(out.yaml), status: "draft" };
+      const proposed = parseRule(out.yaml);
+      // The model proposes content; identity and lineage are pinned by NIYAM.
+      rule = {
+        ...proposed,
+        rule_id: ruleId,
+        version: current ? current.version + 1 : 1,
+        status: "draft",
+        source: { ...proposed.source, circular: ctx.circular.ref, clause: ob.clauseNumber, obligation: ob.id },
+      };
       rationale = out.rationale;
       ctx.llmNotes.push(`Author used ${LLM_MODEL} for ${ruleId} (round ${round})`);
+      ctx.emit({ type: "llm_verdict", id: callId, agent: "author", ok: true, summary: `Draft passed the typed DSL schema; committed to the draft branch for the Validator to challenge` });
     } catch (e) {
       ctx.llmNotes.push(`Author LLM call failed for ${ruleId} (${(e as Error).message}); used rule-based drafting`);
+      ctx.emit({ type: "llm_verdict", id: "", agent: "author", ok: false, summary: `Claude's draft for ${ruleId} was not accepted (${(e as Error).message}); the rule-based Author drafted it instead` });
       rule = undefined;
     }
   }

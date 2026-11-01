@@ -4,7 +4,7 @@ export const TEAM = {
   mentor: "Prof. Suresh R",
   college: "Sri Manakula Vinayagar Engineering College",
   place: "Madagadipet, Puducherry, India",
-  competition: "Virtusa Jatayu Season 5",
+  competition: "Virtusa Jatayu Season 6",
   track: "FDS NA, Use Case 2: Regulatory Circular to Live Rule Engine",
 };
 

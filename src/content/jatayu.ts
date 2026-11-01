@@ -1,5 +1,5 @@
 /**
- * Virtusa Jatayu Season 5 submission content.
+ * Virtusa Jatayu Season 6 submission content.
  * USE_CASE is the official use-case text, verbatim. COVERAGE maps every listed item to code that
  * exists in this repository; nothing here should claim more than src/niyam/** does.
  */

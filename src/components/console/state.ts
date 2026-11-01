@@ -34,6 +34,22 @@ export interface A2ARow {
   phase: "proposal" | "release";
 }
 
+export interface LlmCall {
+  id: string;
+  agent: string;
+  task: string;
+  model: string;
+  status: "running" | "done" | "error";
+  text: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUsd?: number;
+  ms?: number;
+  error?: string;
+  verdict?: { ok: boolean; summary: string; details?: string[] };
+  startedAt: number;
+}
+
 export interface RunState {
   status: "idle" | "running" | "awaiting" | "releasing" | "released" | "refused" | "error";
   meta?: Extract<RunEvent, { type: "meta" }>;
@@ -62,6 +78,7 @@ export interface RunState {
   alerts: AlertRecord[];
   thread?: ThreadView;
   logs: { level: string; text: string }[];
+  llmCalls: LlmCall[];
   error?: string;
   proposalMs?: number;
   releaseMs?: number;
@@ -86,6 +103,7 @@ export const initialState: RunState = {
   rollbacks: [],
   alerts: [],
   logs: [],
+  llmCalls: [],
 };
 
 export type Action =
@@ -186,6 +204,32 @@ function applyEvent(s: RunState, e: RunEvent): RunState {
       return { ...s, alerts: e.alerts };
     case "thread":
       return { ...s, thread: e.thread };
+    case "llm": {
+      const calls = [...s.llmCalls];
+      const i = calls.findIndex((c) => c.id === e.id);
+      const prev = i >= 0 ? calls[i] : { id: e.id, agent: e.agent, task: e.task, model: e.model, status: "running" as const, text: "", startedAt: Date.now() };
+      const next: LlmCall = {
+        ...prev,
+        status: e.phase === "done" ? "done" : e.phase === "error" ? "error" : "running",
+        text: e.text ?? prev.text,
+        inputTokens: e.inputTokens ?? prev.inputTokens,
+        outputTokens: e.outputTokens ?? prev.outputTokens,
+        costUsd: e.costUsd ?? prev.costUsd,
+        ms: e.ms ?? prev.ms,
+        error: e.error ?? prev.error,
+      };
+      if (i >= 0) calls[i] = next;
+      else calls.push(next);
+      return { ...s, llmCalls: calls };
+    }
+    case "llm_verdict": {
+      const calls = [...s.llmCalls];
+      const i = e.id ? calls.findIndex((c) => c.id === e.id) : -1;
+      const verdict = { ok: e.ok, summary: e.summary, details: e.details };
+      if (i >= 0) calls[i] = { ...calls[i], verdict };
+      else calls.push({ id: `v-${calls.length}`, agent: e.agent, task: "Fallback", model: "", status: "error", text: "", verdict, startedAt: Date.now() });
+      return { ...s, llmCalls: calls };
+    }
     case "log":
       return { ...s, logs: [...s.logs, { level: e.level, text: e.text }] };
     case "error":

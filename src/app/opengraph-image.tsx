@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "NIYAM: every clause becomes a rule. Team Dragorithm, Virtusa Jatayu Season 5.";
+export const alt = "NIYAM: every clause becomes a rule. Team Dragorithm, Virtusa Jatayu Season 6.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -36,7 +36,7 @@ export default function OpengraphImage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 24, fontSize: 34, color: MUTED }}>
           <div style={{ width: 56, height: 8, background: NAVY }} />
-          Team Dragorithm · Virtusa Jatayu Season 5
+          Team Dragorithm · Virtusa Jatayu Season 6
         </div>
       </div>
     ),

@@ -74,7 +74,7 @@ export function Footer({ credits = [] as (keyof typeof PICTURES)[] }) {
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/jatayu-star.png" alt="" width={149} height={149} className="h-10 w-10" />
-              <p className="ui text-[14px] font-semibold text-white">Virtusa Jatayu Season 5</p>
+              <p className="ui text-[14px] font-semibold text-white">Virtusa Jatayu Season 6</p>
             </div>
             <p className="ui mt-4 text-[15px] leading-relaxed text-on-navy-muted">
               FDS NA, Use Case 2

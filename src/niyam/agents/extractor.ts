@@ -170,7 +170,11 @@ export async function runExtractor(ctx: NiyamContext, tools: AgentTools, effecti
   let usedLlm = false;
   if (ctx.path === "llm" && llmAvailable()) {
     try {
-      const proposals = await llmExtract(clauses);
+      let callId = "";
+      const proposals = await llmExtract(clauses, (e) => {
+        callId = e.id;
+        ctx.emit({ type: "llm", ...e });
+      });
       usedLlm = true;
       const perClause = new Map<string, number>();
       for (const p of proposals) {
@@ -212,8 +216,17 @@ export async function runExtractor(ctx: NiyamContext, tools: AgentTools, effecti
         });
       }
       ctx.llmNotes.push(`Extractor used ${LLM_MODEL}: ${proposals.length} proposed, ${rejected.length} rejected by span verification`);
+      ctx.emit({
+        type: "llm_verdict",
+        id: callId,
+        agent: "extractor",
+        ok: obligations.length > 0,
+        summary: `${obligations.length} of ${proposals.length} obligations accepted: every span checked as an exact substring of its clause`,
+        details: rejected.map((r) => `Rejected para ${r.clauseNumber}: ${r.reason}`),
+      });
     } catch (e) {
       ctx.llmNotes.push(`Extractor LLM call failed (${(e as Error).message}); fell back to rule-based extraction`);
+      ctx.emit({ type: "llm_verdict", id: "", agent: "extractor", ok: false, summary: `Claude call did not complete (${(e as Error).message}); the rule-based Extractor ran instead` });
     }
   }
   if (!usedLlm) {

@@ -5,7 +5,7 @@ import { Mark } from "../Logo";
 
 /**
  * Opening card for the competition: the Virtusa Jatayu lockup (green star and wordmark, as on the
- * official template), Season 5, the track and the team, then NIYAM. Shown on every load, then it
+ * official template), Season 6, the track and the team, then NIYAM. Shown on every load, then it
  * fades away; a click or any key skips it.
  */
 export function Splash() {
@@ -42,7 +42,7 @@ export function Splash() {
   return (
     <div
       role="dialog"
-      aria-label="Virtusa Jatayu Season 5, FDS NA Use Case 2. NIYAM by Team Dragorithm."
+      aria-label="Virtusa Jatayu Season 6, FDS NA Use Case 2. NIYAM by Team Dragorithm."
       onClick={() => {
         setPhase("leaving");
         setTimeout(() => setPhase("gone"), 500);
@@ -56,7 +56,7 @@ export function Splash() {
         <img src="/brand/virtusa.png" alt="Virtusa" width={352} height={149} className="h-auto w-[150px] sm:w-[180px]" />
       </div>
       <p className="splash-in ui mt-8 text-[clamp(30px,4vw,52px)] font-light leading-none tracking-[-0.02em] text-ink" style={{ ["--d" as string]: "250ms" }}>
-        Jatayu Season 5
+        Jatayu Season 6
       </p>
       <p className="splash-in ui mt-5 max-w-[36ch] text-[16px] leading-snug text-muted" style={{ ["--d" as string]: "550ms" }}>
         FDS NA, Use Case 2 · Regulatory Circular to Live Rule Engine

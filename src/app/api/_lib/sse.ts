@@ -16,6 +16,7 @@ const PACE_MS: Partial<Record<RunEvent["type"], number>> = {
   rollback: 900,
   thread: 200,
   guardrail: 220,
+  llm_verdict: 500,
 };
 
 export function sseStream(run: (emit: (e: RunEvent) => void) => Promise<unknown>, opts: { pace: boolean }) {

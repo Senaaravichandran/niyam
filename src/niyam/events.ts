@@ -1,5 +1,6 @@
 import type { ExecutionPath, McpCallRecord, RolloutState } from "./context";
 import type { ApprovalPayload } from "./approvals/token";
+import type { LlmEvent } from "./llm/claude";
 import type {
   Clause,
   MappingResult,
@@ -108,6 +109,8 @@ export type RunEvent =
   | { type: "rollback"; ruleId: string; toVersion: number; commit: string; reason: string }
   | { type: "alerts"; alerts: AlertRecord[] }
   | { type: "thread"; thread: ThreadView }
+  | ({ type: "llm" } & LlmEvent)
+  | { type: "llm_verdict"; id: string; agent: string; ok: boolean; summary: string; details?: string[] }
   | { type: "log"; level: "info" | "warn" | "error"; agent?: string; text: string }
   | { type: "error"; message: string }
   | { type: "done"; phase: "proposal" | "release"; ms: number };

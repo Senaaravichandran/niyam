@@ -45,3 +45,5 @@ assets/
 # the final submission pack is part of the repo
 !submission/
 !submission/*
+
+.work/

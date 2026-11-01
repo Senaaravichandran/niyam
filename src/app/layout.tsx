@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s · NIYAM",
   },
   description:
-    "NIYAM turns an RBI circular into a tested, two-person-approved, live bank rule, and traces every alert back to the sentence that caused it. Team Dragorithm, Virtusa Jatayu Season 5.",
+    "NIYAM turns an RBI circular into a tested, two-person-approved, live bank rule, and traces every alert back to the sentence that caused it. Team Dragorithm, Virtusa Jatayu Season 6.",
   applicationName: "NIYAM",
   authors: [{ name: "Team Dragorithm" }],
   openGraph: {

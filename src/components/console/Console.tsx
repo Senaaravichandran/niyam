@@ -20,6 +20,7 @@ import {
   Timeline,
 } from "./Panels";
 import { AgentMesh } from "./AgentMesh";
+import { LlmPanel } from "./LlmPanel";
 import { AuditPack } from "./AuditPack";
 import { GraphPanel } from "./GraphPanel";
 import { ImpactNarrative } from "./ImpactNarrative";
@@ -35,6 +36,7 @@ interface Status {
 
 const NAV = [
   ["mesh", "Agent mesh"],
+  ["claude", "Claude live"],
   ["circular", "Circular"],
   ["obligations", "Obligations"],
   ["mapping", "Mapping"],
@@ -75,7 +77,7 @@ export function Console() {
     const ac = new AbortController();
     abort.current = ac;
     dispatch({ type: "start" });
-    scrollTo("mesh");
+    scrollTo(path === "llm" ? "claude" : "mesh");
     try {
       await streamEvents("/api/run", { path }, (event) => dispatch({ type: "event", event }), ac.signal);
     } catch (e) {
@@ -163,7 +165,7 @@ export function Console() {
                 title={llmOk ? `Extractor and Author use ${status?.llm.model}` : "Set ANTHROPIC_API_KEY on the deployment to enable"}
                 className={`px-3 py-1.5 transition-colors ${path === "llm" ? "bg-ink text-white" : llmOk ? "cursor-pointer bg-transparent text-ink hover:bg-surface" : "cursor-not-allowed bg-transparent text-soft"}`}
               >
-                Claude {llmOk ? "" : "(no key)"}
+                {llmOk ? "Claude live" : "Claude (no key)"}
               </button>
             </div>
             <button type="button" className="btn" onClick={run} disabled={running}>
@@ -231,6 +233,9 @@ export function Console() {
         <main className="space-y-4">
           <Section id="mesh" title="Agent mesh" aside={<span className="ui text-[13px] text-muted">Conductor, 6 agents, 7 MCP servers · live</span>}>
             <AgentMesh s={s} />
+          </Section>
+          <Section id="claude" title="Claude, live" aside={<span className="ui text-[13px] text-muted">{s.meta?.path === "llm" ? `Streaming from ${s.meta.llmModel}` : "Extractor and Author calls"}</span>}>
+            <LlmPanel s={s} enabled={llmOk} model={status?.llm.model} />
           </Section>
           <Section id="circular" title="1 · Circular and applicability" aside={<span className="ui text-[13px] text-muted">Reader</span>}>
             <ClausesPanel s={s} />
