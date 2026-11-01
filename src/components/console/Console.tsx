@@ -138,13 +138,10 @@ export function Console() {
   const narration = narrate(s);
   useEffect(() => {
     if (!follow || s.status === "idle") return;
-    // Scroll once quickly, then again after charts above the target have finished laying out.
-    const t1 = setTimeout(() => scrollTo(narration.section), 250);
-    const t2 = setTimeout(() => scrollTo(narration.section), 1100);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    // Scroll once quickly, then re-settle while panels above the target (the What-if chart
+    // fetches its own data) finish laying out and push it down.
+    const timers = [250, 1100, 2400, 4000].map((ms) => setTimeout(() => scrollTo(narration.section), ms));
+    return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [narration.section, follow]);
 
