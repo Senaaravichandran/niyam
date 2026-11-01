@@ -74,7 +74,7 @@ export function narrate(s: RunState): Narration {
   return { stage: 0, text: "The Conductor is finding its agents by their Agent Cards and checking that each can only use its own tools.", section: "mesh" };
 }
 
-export function Narrator({ s, follow, setFollow }: { s: RunState; follow: boolean; setFollow: (v: boolean) => void }) {
+export function Narrator({ s, follow, setFollow, onJump }: { s: RunState; follow: boolean; setFollow: (v: boolean) => void; onJump: (section: string) => void }) {
   const n = narrate(s);
   const running = s.status === "running" || s.status === "releasing";
   return (
@@ -85,13 +85,16 @@ export function Narrator({ s, follow, setFollow }: { s: RunState; follow: boolea
             const done = n.stage > i;
             const now = n.stage === i;
             return (
-              <li
-                key={st.key}
-                className={`flex shrink-0 list-none items-center gap-1.5 px-2.5 py-1 text-[12.5px] transition-colors ${now ? "bg-accent text-white" : done ? "bg-white/15 text-white" : "bg-white/5 text-white/55"}`}
-                aria-current={now ? "step" : undefined}
-              >
-                <span className={`h-1.5 w-1.5 ${now && running ? "pulse bg-white" : done ? "bg-[#6ee7b7]" : "bg-white/40"}`} />
-                {st.label}
+              <li key={st.key} className="shrink-0 list-none" aria-current={now ? "step" : undefined}>
+                <button
+                  type="button"
+                  onClick={() => onJump(st.section)}
+                  title={`Go to ${st.label}`}
+                  className={`flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-[12.5px] transition-colors ${now ? "bg-accent text-white" : done ? "bg-white/15 text-white hover:bg-white/25" : "bg-white/5 text-white/55 hover:bg-white/10"}`}
+                >
+                  <span className={`h-1.5 w-1.5 ${now && running ? "pulse bg-white" : done ? "bg-[#6ee7b7]" : "bg-white/40"}`} />
+                  {st.label}
+                </button>
               </li>
             );
           })}

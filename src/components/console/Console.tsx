@@ -80,7 +80,7 @@ export function Console() {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const offset = (header.current?.getBoundingClientRect().bottom ?? 0) + 12;
+    const offset = (header.current?.offsetHeight ?? 0) + 12;
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: "smooth" });
   };
 
@@ -151,8 +151,8 @@ export function Console() {
 
   return (
     <div className="min-h-svh bg-surface">
-      {/* Control bar */}
-      <div ref={header} className="sticky top-16 z-20 bg-surface">
+      {/* Control bar: scrolls away; only the narrator stays pinned while you watch. */}
+      <div className="bg-surface">
         <div className="wrap flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0">
             <h1 className="text-[clamp(22px,2.2vw,30px)] tracking-[-0.03em]">Pipeline console</h1>
@@ -195,12 +195,14 @@ export function Console() {
             </button>
           ))}
         </nav>
-        <Narrator s={s} follow={follow} setFollow={setFollow} />
+      </div>
+      <div ref={header} className="sticky top-0 z-20">
+        <Narrator s={s} follow={follow} setFollow={setFollow} onJump={scrollTo} />
       </div>
 
-      <div className="wrap grid gap-4 pb-24 pt-2 lg:grid-cols-[340px_1fr]">
+      <div className="wrap grid gap-5 pb-24 pt-5 lg:grid-cols-[340px_1fr]">
         {/* Left: run status */}
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[290px] lg:max-h-[calc(100svh-305px)] lg:self-start lg:overflow-y-auto">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[116px] lg:max-h-[calc(100svh-132px)] lg:self-start lg:overflow-y-auto">
           <div className="bg-bg p-4">
             <div className="ui flex flex-wrap gap-1.5">
               <Chip tone={s.status === "released" ? "ok" : s.status === "refused" || s.status === "error" ? "bad" : s.status === "awaiting" ? "accent" : running ? "warn" : "muted"}>

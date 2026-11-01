@@ -8,9 +8,10 @@ const LINKS = [
   { href: "/jatayu", label: "Jatayu" },
 ];
 
-export function Nav({ tone = "light" }: { tone?: "light" | "surface" }) {
+/** `console`: the console has its own Run button and pinned narrator, so the bar drops its CTA and scrolls away. */
+export function Nav({ tone = "light", console = false }: { tone?: "light" | "surface"; console?: boolean }) {
   return (
-    <header className={`sticky top-0 z-30 ${tone === "surface" ? "bg-surface" : "bg-bg"}`}>
+    <header className={`${console ? "relative" : "sticky top-0"} z-30 ${tone === "surface" ? "bg-surface" : "bg-bg"}`}>
       <nav className="wrap flex h-16 items-center justify-between gap-6" aria-label="Main">
         <Link href="/" className="no-underline" aria-label="NIYAM home">
           <Wordmark />
@@ -31,9 +32,11 @@ export function Nav({ tone = "light" }: { tone?: "light" | "surface" }) {
           <Link href="/jatayu" className="ui px-2 text-[15px] text-ink no-underline hover:text-accent lg:hidden max-[380px]:hidden">
             Jatayu
           </Link>
-          <Link href="/console" className="btn">
-            Run the pipeline
-          </Link>
+          {!console && (
+            <Link href="/console" className="btn">
+              Run the pipeline
+            </Link>
+          )}
         </div>
       </nav>
     </header>

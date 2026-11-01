@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ConsolePage() {
   return (
     <>
-      <Nav tone="surface" />
+      <Nav tone="surface" console />
       <Console />
     </>
   );

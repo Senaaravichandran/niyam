@@ -153,7 +153,8 @@ export function WhatIf({ s }: { s: RunState }) {
       )}
 
       {!data && !error && (
-        <p className="ui mt-3 bg-surface px-4 py-6 text-[14px] text-muted" aria-live="polite">
+        // Holds the chart's final height so nothing below jumps when the sweep arrives.
+        <p className="ui mt-3 flex min-h-[392px] items-center justify-center bg-surface px-4 py-6 text-[14px] text-muted" aria-live="polite">
           {loading ? "Replaying the rule at each threshold…" : "Preparing the sweep…"}
         </p>
       )}
