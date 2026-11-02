@@ -10,13 +10,47 @@ export interface Approver {
   id: string;
   name: string;
   role: "Chief Compliance Officer" | "Head of Risk and IT Change";
+  /** Maker prepares and reviews the change; checker independently authorises it. */
+  duty: "Maker" | "Checker";
 }
 
 /** SYNTHETIC approvers for the demo. */
 export const APPROVERS: Approver[] = [
-  { id: "APR-CCO", name: "A. Menon", role: "Chief Compliance Officer" },
-  { id: "APR-RISK", name: "R. Iyer", role: "Head of Risk and IT Change" },
+  { id: "APR-CCO", name: "A. Menon", role: "Chief Compliance Officer", duty: "Maker" },
+  { id: "APR-RISK", name: "R. Iyer", role: "Head of Risk and IT Change", duty: "Checker" },
 ];
+
+/** What each approver must confirm they reviewed before signing. */
+export const REVIEW_CHECKS = [
+  "clause: I read the circular clause and the exact quoted words",
+  "rule: The rule's number, operator and scope match the clause",
+  "tests: All generated tests pass, including the boundary cases",
+  "impact: I reviewed the 90-day backtest and the alert impact",
+] as const;
+
+/** The reviewer's own record, signed into the token. */
+export interface Review {
+  name: string;
+  employeeId: string;
+  reason: string;
+  checks: string[];
+}
+
+/** Validates a review; returns an error message or the cleaned review. */
+export function cleanReview(r: unknown): Review | string {
+  const o = (r ?? {}) as Record<string, unknown>;
+  // \s also covers U+2028 and U+2029, so every value stays on one line.
+  const one = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "");
+  const name = one(o.name, 60);
+  const employeeId = one(o.employeeId, 20);
+  const reason = one(o.reason, 500);
+  const checks = Array.isArray(o.checks) ? o.checks.filter((c): c is string => typeof c === "string" && (REVIEW_CHECKS as readonly string[]).includes(c)) : [];
+  if (name.length < 2) return "Enter the approver's full name";
+  if (!/^[A-Za-z0-9-]{3,20}$/.test(employeeId)) return "Enter a valid employee ID (letters, digits, hyphen)";
+  if (reason.length < 10) return "Give a reason for approving (at least 10 characters)";
+  if (new Set(checks).size !== REVIEW_CHECKS.length) return "Tick every review check before signing";
+  return { name, employeeId, reason, checks: [...REVIEW_CHECKS] };
+}
 
 export interface ApprovalPayload {
   run_id?: string;
@@ -26,6 +60,10 @@ export interface ApprovalPayload {
   approver_id: string;
   approver_name: string;
   role: string;
+  duty?: string;
+  employee_id?: string;
+  reason?: string;
+  checks?: string[];
   issued_at: string;
 }
 
@@ -62,6 +100,7 @@ export function issueToken(
   approver: Approver,
   issuedAt = new Date().toISOString(),
   runId?: string,
+  review?: Review,
 ): ApprovalToken {
   const payload: ApprovalPayload = {
     ...(runId ? { run_id: runId } : {}),
@@ -69,8 +108,10 @@ export function issueToken(
     version: rule.version,
     rule_sha256: sha256(rule.yaml),
     approver_id: approver.id,
-    approver_name: approver.name,
+    approver_name: review?.name ?? approver.name,
     role: approver.role,
+    duty: approver.duty,
+    ...(review ? { employee_id: review.employeeId, reason: review.reason, checks: review.checks } : {}),
     issued_at: issuedAt,
   };
   const body = b64(JSON.stringify(payload));
@@ -125,9 +166,10 @@ export function verifyTwoPerson(tokens: string[], ruleYaml: string, ruleId: stri
   const valid = results.filter((r) => r.ok);
   const people = new Set(valid.map((r) => r.payload!.approver_id));
   const roles = new Set(valid.map((r) => r.payload!.role));
+  const names = new Set(valid.map((r) => r.payload!.approver_name.trim().toLowerCase()));
   let reason: string | undefined;
   if (valid.length < results.length) reason = results.find((r) => !r.ok)?.reason;
-  else if (people.size < 2) reason = "Two different approvers are required";
+  else if (people.size < 2 || names.size < 2) reason = "Two different approvers are required";
   else if (roles.size < 2) reason = "Approvers must hold different roles";
   return { ok: !reason, reason, results };
 }
@@ -158,6 +200,7 @@ export interface SignablePack {
   testsTotal: number;
   circular?: { ref: string; title: string; text: string; synthetic: boolean };
   entityType?: string;
+  bankKey?: string;
 }
 
 function packBody(p: SignablePack) {
@@ -173,6 +216,7 @@ function packBody(p: SignablePack) {
     testsTotal: p.testsTotal,
     circular: p.circular ? { ref: p.circular.ref, title: p.circular.title, sha256: sha256(p.circular.text), synthetic: p.circular.synthetic } : null,
     entityType: p.entityType ?? null,
+    bankKey: p.bankKey ?? null,
   });
 }
 

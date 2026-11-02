@@ -1,4 +1,4 @@
-import { APPROVERS, issueToken, verifyPack } from "@/niyam/approvals/token";
+import { APPROVERS, cleanReview, issueToken, verifyPack } from "@/niyam/approvals/token";
 import { parseRule } from "@/niyam/dsl/schema";
 import type { ReleaseBundle } from "@/niyam/events";
 
@@ -15,7 +15,7 @@ const MAX_BODY = 400_000;
 export async function POST(req: Request) {
   const text = await req.text();
   if (text.length > MAX_BODY) return Response.json({ error: "Payload too large" }, { status: 413 });
-  let body: { approverId?: string; bundle?: ReleaseBundle } | null = null;
+  let body: { approverId?: string; bundle?: ReleaseBundle; review?: unknown } | null = null;
   try {
     body = JSON.parse(text);
   } catch {
@@ -25,6 +25,14 @@ export async function POST(req: Request) {
   if (!approver) return Response.json({ error: "Unknown approver" }, { status: 400 });
   const bundle = body?.bundle;
   if (!bundle?.drafts?.length || bundle.drafts.length > 10) return Response.json({ error: "A signed approval pack is required" }, { status: 400 });
+
+  // The review is optional for API callers; the console always sends one.
+  let review;
+  if (body?.review !== undefined) {
+    const r = cleanReview(body.review);
+    if (typeof r === "string") return Response.json({ error: r }, { status: 400 });
+    review = r;
+  }
 
   const pack = verifyPack(bundle);
   if (!pack.ok) return Response.json({ error: pack.reason }, { status: 409 });
@@ -37,7 +45,7 @@ export async function POST(req: Request) {
     } catch (e) {
       return Response.json({ error: `${d.ruleId}: ${(e as Error).message}` }, { status: 400 });
     }
-    const t = issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, approver, undefined, bundle.runId);
+    const t = issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, approver, undefined, bundle.runId, review);
     tokens.push({ ruleId: d.ruleId, token: t.token, payload: t.payload });
   }
   return Response.json({ approver, tokens });

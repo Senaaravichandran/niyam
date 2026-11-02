@@ -20,8 +20,11 @@ export const COMPARATORS: { re: RegExp; fire: Operator; meaning: string }[] = [
   { re: /less than|below/i, fire: ">=", meaning: "must stay strictly below" },
 ];
 
-/** A percentage written as "12 per cent", "12 percent" or "12%", followed by its base. */
-const NUMBER_PCT = /(\d+(?:\.\d+)?)\s*(?:per\s?cent|%)\s+of (?:its |the )?([A-Za-z0-9 ]+?)(?=[.,;)]|$)/i;
+/**
+ * A percentage written as "12 per cent", "12 percent" or "12%", followed by its base. A comparator
+ * may also follow the number ("20 per cent or more of"); it is captured in group 2.
+ */
+const NUMBER_PCT = /(\d+(?:\.\d+)?)\s*(?:per\s?cent|%)(?:\s+(or more|or above|and above))?\s+of (?:its |the )?([A-Za-z0-9 ]+?)(?=[.,;)]|$)/i;
 
 /** The comparator that governs a number is the closest one written before it. */
 function governingComparator(text: string, numberIdx: number) {
@@ -73,7 +76,14 @@ export function extractClause(
   const pct = text.match(NUMBER_PCT);
   // Definitions ("X means ...") describe, they do not oblige.
   const isDefinition = /\bmeans\b/i.test(text) && !/\b(shall|must)\b/i.test(text);
-  const found = pct && !isDefinition ? governingComparator(text, text.indexOf(pct[0])) : undefined;
+  const pctIdx = pct ? text.indexOf(pct[0]) : -1;
+  // "20 per cent or more": the comparator after the number governs it; otherwise the closest one before.
+  const after = pct?.[2] ? COMPARATORS.find((c) => c.fire === ">=") : undefined;
+  const found = pct && !isDefinition
+    ? after
+      ? { c: after, m: [pct[2]] as unknown as RegExpMatchArray, idx: pctIdx }
+      : governingComparator(text, pctIdx)
+    : undefined;
   const comp = found ? { c: found.c, m: found.m } : undefined;
 
   if (pct && comp?.m) {

@@ -10,6 +10,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/existing", label: "Existing solution" },
       { href: "/solution", label: "Our solution" },
       { href: "/architecture", label: "Architecture" },
+      { href: "/business", label: "Business and target segment" },
+      { href: "/market", label: "Market size and future scope" },
       { href: "/console", label: "Pipeline console" },
     ],
   },

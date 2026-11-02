@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { metricById, metricForText, METRICS } from "../data/semanticModel";
-import { POLICIES } from "../data/seed";
 import { compileRule } from "../dsl/compile";
 import { parseRule, RuleParseError } from "../dsl/schema";
 import { runTests } from "../dsl/testgen";
@@ -104,7 +103,7 @@ export function createToolServer(ctx: NiyamContext, group: ToolGroup, callerAgen
         ctx.graph.in(metric, "MEASURES").map((r) => ({ ruleId: r.id, ...r.props })),
       );
       tool("kg_find_policies", "Find internal policy sections linked to a rule or a metric", { rule_id: z.string().optional(), metric: z.string().optional() }, ({ rule_id, metric }) =>
-        POLICIES.filter((p) => (rule_id && p.implementedBy.includes(rule_id)) || (metric && p.permits?.metric === metric)),
+        ctx.bank.policies.filter((p) => (rule_id && p.implementedBy.includes(rule_id)) || (metric && p.permits?.metric === metric)),
       );
       tool(
         "kg_link_mapping",

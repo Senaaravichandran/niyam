@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { EXISTING_RULES } from "@/niyam/data/seed";
+import { bankByKey, bankSiteUrl } from "@/niyam/data/banks";
 import { toYaml } from "@/niyam/dsl/schema";
 import type { ApprovalView, ReleaseBundle } from "@/niyam/events";
+import { Wordmark } from "@/components/Logo";
+import { BankRelay } from "@/components/bank/relay";
 import {
   A2AFeed,
-  ApprovalPanel,
   BacktestPanel,
   Chip,
   ClausesPanel,
@@ -20,6 +22,8 @@ import {
   Timeline,
 } from "./Panels";
 import { AgentMesh } from "./AgentMesh";
+import { AgentOutputs } from "./AgentOutputs";
+import { ApprovalForms, type ReviewInput } from "./Approval";
 import { LlmPanel } from "./LlmPanel";
 import { Narrator, narrate } from "./Narrator";
 import { DEFAULT_SETUP, RunSetup, type SetupValue } from "./RunSetup";
@@ -66,6 +70,16 @@ export function Console() {
   const [follow, setFollow] = useState(true);
   const abort = useRef<AbortController | null>(null);
   const header = useRef<HTMLDivElement>(null);
+  const relay = useRef<BankRelay | null>(null);
+  const [origin, setOrigin] = useState<string | undefined>();
+  const bank = bankByKey(s.bundle?.bankKey ?? setup.bank);
+  const site = bankSiteUrl(bank, origin);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    relay.current = new BankRelay();
+    return () => relay.current?.close();
+  }, []);
 
   useEffect(() => {
     fetch("/api/status")
@@ -74,7 +88,13 @@ export function Console() {
       .catch(() => setStatus(null));
   }, []);
 
-  const previousYaml = useMemo(() => Object.fromEntries(EXISTING_RULES.map((r) => [r.rule_id, toYaml(r)])), []);
+  const previousYaml = useMemo(() => Object.fromEntries(bank.rules.map((r) => [r.rule_id, toYaml(r)])), [bank]);
+
+  // Back: return to wherever the visitor came from on this site, or to the landing page.
+  function back() {
+    if (window.history.length > 1 && document.referrer.startsWith(window.location.origin)) window.history.back();
+    else window.location.href = "/";
+  }
 
   // Scroll a section to just below the sticky header, whatever its current height.
   const scrollTo = (id: string) => {
@@ -89,22 +109,22 @@ export function Console() {
     const ac = new AbortController();
     abort.current = ac;
     dispatch({ type: "start" });
-    const circular = { ref: setup.ref, text: setup.text, synthetic: setup.sampleId === "synthetic" };
+    const circular = { ref: setup.ref, text: setup.text, synthetic: true, ...(setup.source === "bank-pdf" ? { title: bankByKey(setup.bank).circular.title } : {}) };
     try {
-      await streamEvents("/api/run", { path, entityType: setup.entity, circular }, (event) => dispatch({ type: "event", event }), ac.signal);
+      await streamEvents("/api/run", { path, bank: setup.bank, circular }, (event) => dispatch({ type: "event", event }), ac.signal);
     } catch (e) {
       if ((e as Error).name !== "AbortError") dispatch({ type: "error", message: (e as Error).message });
     }
   }
 
-  async function sign(approverId: string) {
+  async function sign(approverId: string, review: ReviewInput) {
     if (!s.bundle) return;
     setSigning(approverId);
     try {
       const res = await fetch("/api/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approverId, bundle: s.bundle }),
+        body: JSON.stringify({ approverId, bundle: s.bundle, review }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? res.statusText);
@@ -125,10 +145,22 @@ export function Console() {
       ? { ...s.bundle, drafts: s.bundle.drafts.map((d, i) => (i === 0 ? { ...d, yaml: d.yaml.replace(/value: ([\d.]+)/, (_, v) => `value: ${Number(v) + 1}`) } : d)) }
       : s.bundle;
     dispatch({ type: "start_release" });
+    // Open the bank's own rule-engine site and stream the rollout to it as it happens.
+    const r = relay.current;
+    r?.open(site, bank.key);
+    r?.send({ niyam: 1, kind: "init", bank: bank.key, bundle: s.bundle, approvals: s.approvals, path: s.meta?.path });
     const ac = new AbortController();
     abort.current = ac;
     try {
-      await streamEvents("/api/release", { bundle, tokens, injectDrift: drift }, (event) => dispatch({ type: "event", event }), ac.signal);
+      await streamEvents(
+        "/api/release",
+        { bundle, tokens, injectDrift: drift },
+        (event) => {
+          dispatch({ type: "event", event });
+          r?.send({ niyam: 1, kind: "event", event });
+        },
+        ac.signal,
+      );
     } catch (e) {
       if ((e as Error).name !== "AbortError") dispatch({ type: "error", message: (e as Error).message });
     }
@@ -151,44 +183,68 @@ export function Console() {
 
   return (
     <div className="min-h-svh bg-surface">
-      {/* Control bar: scrolls away; only the narrator stays pinned while you watch. */}
-      <div className="bg-surface">
-        <div className="wrap flex flex-wrap items-center justify-between gap-3 py-3">
-          <div className="min-w-0">
-            <h1 className="text-[clamp(22px,2.2vw,30px)] tracking-[-0.03em]">Pipeline console</h1>
-            <p className="ui truncate text-[13px] text-muted">
-              {setup.ref} · {setup.entity === "UCB" ? "Demo Urban Co-operative Bank" : `Demo ${setup.entity}`} · synthetic bank data
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="ui flex bg-bg p-1 text-[13px]" role="radiogroup" aria-label="Execution path">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={path === "rule-based"}
-                onClick={() => setPath("rule-based")}
-                className={`cursor-pointer px-3 py-1.5 transition-colors ${path === "rule-based" ? "bg-ink text-white" : "bg-transparent text-ink hover:bg-surface"}`}
-              >
-                Rule-based
+      {/* One pinned bar: back, the bank and its live site, the mode and Run. The narrator joins it during a run. */}
+      <div ref={header} className="sticky top-0 z-30">
+        <div className="bg-bg shadow-[0_1px_0_rgba(11,31,58,0.08)]">
+          <div className="wrap flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" onClick={back} aria-label="Back" title="Back" className="ui flex h-9 cursor-pointer items-center gap-1.5 bg-surface px-3 text-[14px] text-ink transition-colors hover:bg-surface-2">
+                <span aria-hidden="true">←</span> Back
               </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={path === "llm"}
-                onClick={() => llmOk && setPath("llm")}
-                disabled={!llmOk}
-                title={llmOk ? `Extractor and Author use ${status?.llm.model}` : "Set ANTHROPIC_API_KEY on the deployment to enable"}
-                className={`px-3 py-1.5 transition-colors ${path === "llm" ? "bg-ink text-white" : llmOk ? "cursor-pointer bg-transparent text-ink hover:bg-surface" : "cursor-not-allowed bg-transparent text-soft"}`}
-              >
-                {llmOk ? "Claude live" : "Claude (no key)"}
+              <Link href="/" className="no-underline" aria-label="NIYAM home">
+                <Wordmark />
+              </Link>
+              <span className="hidden h-6 w-px bg-surface-2 md:block" aria-hidden="true" />
+              <div className="hidden min-w-0 md:block">
+                <p className="ui truncate text-[14px] font-semibold text-ink">
+                  <span className="mr-1.5 inline-block h-2.5 w-2.5 align-middle" style={{ background: bank.brand }} aria-hidden="true" />
+                  {bank.short} · {bank.kind}
+                </p>
+                <a href={site} target={`niyam-bank-${bank.key}`} rel="noopener" className="ui link block truncate text-[12.5px] text-accent">
+                  {site.replace(/^https?:\/\//, "")} ↗
+                </a>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="ui flex bg-surface p-1 text-[13px]" role="radiogroup" aria-label="Execution path">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={path === "rule-based"}
+                  onClick={() => setPath("rule-based")}
+                  className={`cursor-pointer px-3 py-1.5 transition-colors ${path === "rule-based" ? "bg-ink text-white" : "bg-transparent text-ink hover:bg-bg"}`}
+                >
+                  Rule-based
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={path === "llm"}
+                  onClick={() => llmOk && setPath("llm")}
+                  disabled={!llmOk}
+                  title={llmOk ? `Extractor and Author use ${status?.llm.model}` : "Set ANTHROPIC_API_KEY on the deployment to enable"}
+                  className={`px-3 py-1.5 transition-colors ${path === "llm" ? "bg-ink text-white" : llmOk ? "cursor-pointer bg-transparent text-ink hover:bg-bg" : "cursor-not-allowed bg-transparent text-soft"}`}
+                >
+                  {llmOk ? "Claude live" : "Claude (no key)"}
+                </button>
+              </div>
+              <button type="button" className="btn" onClick={run} disabled={running || !setup.text.trim()}>
+                {s.status === "running" ? "Running…" : s.status === "idle" ? "Run the pipeline" : "Run again"}
               </button>
             </div>
-            <button type="button" className="btn" onClick={run} disabled={running}>
-              {s.status === "running" ? "Running…" : s.status === "idle" ? "Run the pipeline" : "Run again"}
-            </button>
           </div>
         </div>
-        <nav className="wrap scrollbar-none flex gap-1 overflow-x-auto pb-2" aria-label="Console sections">
+        {s.status !== "idle" && <Narrator s={s} follow={follow} setFollow={setFollow} onJump={scrollTo} />}
+      </div>
+
+      <div className="bg-surface">
+        <div className="wrap pt-5">
+          <h1 className="text-[clamp(24px,2.4vw,32px)] tracking-[-0.03em]">Pipeline console</h1>
+          <p className="ui mt-1 text-[14px] text-muted">
+            {setup.ref} · {bank.profile.name.replace(/\s*\(SYNTHETIC\)\s*$/i, "")} · synthetic bank data
+          </p>
+        </div>
+        <nav className="wrap scrollbar-none mt-3 flex gap-1 overflow-x-auto pb-1" aria-label="Console sections">
           {NAV.map(([id, label]) => (
             <button key={id} type="button" onClick={() => scrollTo(id)} className="ui shrink-0 cursor-pointer bg-transparent px-2.5 py-1 text-[13px] text-muted transition-colors hover:bg-bg hover:text-ink">
               {label}
@@ -196,13 +252,14 @@ export function Console() {
           ))}
         </nav>
       </div>
-      <div ref={header} className="sticky top-0 z-20">
-        <Narrator s={s} follow={follow} setFollow={setFollow} onJump={scrollTo} />
-      </div>
 
-      <div className="wrap grid gap-5 pb-24 pt-5 lg:grid-cols-[340px_1fr]">
-        {/* Left: run status */}
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-[116px] lg:max-h-[calc(100svh-132px)] lg:self-start lg:overflow-y-auto">
+      <div className="wrap grid gap-5 pb-24 pt-4 lg:grid-cols-[272px_1fr]">
+        {/* Left: run status, kept narrow so the run itself has the room */}
+        <aside className={`min-w-0 space-y-3 lg:sticky lg:self-start lg:overflow-y-auto ${s.status === "idle" ? "lg:top-[84px] lg:max-h-[calc(100svh-100px)]" : "lg:top-[168px] lg:max-h-[calc(100svh-184px)]"}`}>
+          <div className="bg-bg p-4">
+            <p className="ui mb-1 text-[14px] font-semibold text-ink">What each agent produced</p>
+            <AgentOutputs s={s} onJump={scrollTo} />
+          </div>
           <div className="bg-bg p-4">
             <div className="ui flex flex-wrap gap-1.5">
               <Chip tone={s.status === "released" ? "ok" : s.status === "refused" || s.status === "error" ? "bad" : s.status === "awaiting" ? "accent" : running ? "warn" : "muted"}>
@@ -228,9 +285,12 @@ export function Console() {
               </p>
             ))}
             {s.error && <p className="ui mt-2 bg-bad-soft p-2 text-[13px] text-bad">{s.error}</p>}
-            <div className="mt-3">
-              <Timeline s={s} />
-            </div>
+            <details className="mt-2" open={running}>
+              <summary className="ui cursor-pointer text-[13px] font-semibold text-ink">Agent steps, with measured time</summary>
+              <div className="mt-1">
+                <Timeline s={s} />
+              </div>
+            </details>
             {s.testsTotal && (
               <p className="ui mt-2 bg-ok-soft px-3 py-2 text-[13px] font-semibold text-ok">
                 {s.testsTotal.passed}/{s.testsTotal.total} generated tests pass
@@ -249,7 +309,7 @@ export function Console() {
 
         {/* Right: the run, section by section */}
         <main className="min-w-0 space-y-5">
-          <Section id="setup" title="Set up the run" aside={<span className="ui text-[13px] text-muted">Your bank and the circular it just received</span>}>
+          <Section id="setup" title="Set up the run" aside={<span className="ui text-[13px] text-muted">Choose a bank, then the circular it received</span>}>
             <RunSetup value={setup} onChange={setSetup} disabled={running} />
           </Section>
           <Section id="mesh" title="Agent mesh" aside={<span className="ui text-[13px] text-muted">Conductor, 6 agents, 7 MCP servers · live</span>}>
@@ -283,9 +343,9 @@ export function Console() {
             </div>
           </Section>
           <Section id="approval" title="6 · Two-person approval" aside={<span className="ui text-[13px] text-muted">Humans</span>}>
-            <ApprovalPanel s={s} onSign={sign} signing={signing} tamper={tamper} setTamper={setTamper} drift={drift} setDrift={setDrift} onRelease={release} />
+            <ApprovalForms s={s} bankName={bank.short} onSign={sign} signing={signing} tamper={tamper} setTamper={setTamper} drift={drift} setDrift={setDrift} onRelease={release} />
           </Section>
-          <Section id="rollout" title="7 · Rollout and Sentinel" aside={<span className="ui text-[13px] text-muted">Release</span>}>
+          <Section id="rollout" title="7 · Rollout and Sentinel" aside={<a href={site} target={`niyam-bank-${bank.key}`} rel="noopener" className="ui link text-[13px] text-accent">Watch it live on {bank.short}&apos;s site ↗</a>}>
             <RolloutPanel s={s} />
           </Section>
           <Section id="thread" title="8 · Golden Thread" aside={<span className="ui text-[13px] text-muted">Alert to circular</span>}>

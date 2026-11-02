@@ -11,7 +11,7 @@ export const maxDuration = 120;
 /** Phase 1: stream the run from circular to approval pack. */
 export async function POST(req: Request) {
   if (!allowRequest(clientIp(req))) return tooMany();
-  const parsed = await readJson<{ path?: string; pace?: boolean; entityType?: string; circular?: { ref?: string; title?: string; text?: string; synthetic?: boolean } }>(req, 30_000);
+  const parsed = await readJson<{ path?: string; pace?: boolean; entityType?: string; bank?: string; circular?: { ref?: string; title?: string; text?: string; synthetic?: boolean } }>(req, 30_000);
   if (!parsed.ok) return parsed.res;
   const body = parsed.value ?? {};
   let circular;
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 400 });
   }
-  const profile = profileFor(body.entityType);
+  const profile = profileFor(body.entityType, body.bank);
   let path: "rule-based" | "llm" = body.path === "llm" ? "llm" : "rule-based";
   let note: string | undefined;
   if (path === "llm") {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   return sseStream(
     async (emit) => {
       if (note) emit({ type: "log", level: "warn", text: note });
-      const ctx = await createContext({ path, emit, circular, profile });
+      const ctx = await createContext({ path, emit, circular, profile, bank: body.bank });
       await runProposal(ctx);
     },
     { pace: body.pace !== false },

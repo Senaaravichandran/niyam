@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { CIRCULAR_REF } from "@/niyam/data/circular";
-import { POLICIES } from "@/niyam/data/seed";
+import { BANKS } from "@/niyam/data/banks";
+
+/** Policy ids are unique across the four banks, so any run can look its policy up here. */
+const POLICIES = BANKS.flatMap((b) => b.policies);
 import type { RunState } from "./state";
 
 type Segment = { kind: "keep" | "del" | "ins"; text: string };

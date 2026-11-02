@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   return sseStream(
     async (emit) => {
       // The pack signature (checked in runRelease) covers this circular and bank type.
-      const ctx = await createContext({ emit, runId: body.bundle!.runId, path: body.bundle!.path, circular: circularFrom(body.bundle!.circular), profile: profileFor(body.bundle!.entityType) });
+      const ctx = await createContext({ emit, runId: body.bundle!.runId, path: body.bundle!.path, circular: circularFrom(body.bundle!.circular), profile: profileFor(body.bundle!.entityType, body.bundle!.bankKey), bank: body.bundle!.bankKey });
       await runRelease(ctx, { bundle: body.bundle!, tokens: body.tokens!, injectDrift: body.injectDrift !== false });
     },
     { pace: body.pace !== false },

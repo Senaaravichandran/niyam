@@ -47,3 +47,8 @@ assets/
 !submission/*
 
 .work/
+
+# The four synthetic bank circulars are part of the demo
+!bank-rules/
+!bank-rules/*.pdf
+!public/bank-rules/*.pdf

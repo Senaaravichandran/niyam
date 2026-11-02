@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
 import type { CapitalRow, LoanRow } from "../data/loanBook";
-import { generateLoanBook } from "../data/loanBook";
+import { DAYS, DEFAULT_SHAPE, LOAN_BOOK_SEED, generateLoanBook, type BookShape } from "../data/loanBook";
 
 /**
  * Sandbox SQL engine. Compiled rules are plain analytical SQL; in this deployment they execute on
@@ -95,32 +95,42 @@ export function runQuery(db: Database, sql: string): AlertRow[] {
 }
 
 const g = globalThis as unknown as {
-  __niyamBookDb?: Promise<Database>;
+  __niyamBook?: Record<string, Promise<Database>>;
   __niyamForward?: Record<string, Promise<Database>>;
 };
+
+/** Which synthetic book to build: a seed plus the bank's shape. The default is the original book. */
+export interface BookKey {
+  id: string;
+  seed: number;
+  shape: BookShape;
+}
+
+const DEFAULT_BOOK: BookKey = { id: "default", seed: LOAN_BOOK_SEED, shape: DEFAULT_SHAPE };
 
 export const FORWARD_DAYS = 12;
 /** Rollout day (1-based) on which the injected data fault starts. */
 export const DRIFT_FROM_DAY = 10;
 
-/** The 90-day synthetic book used for backtests, built once per server instance. */
-export function getBookDb(): Promise<Database> {
-  if (!g.__niyamBookDb) {
-    const book = generateLoanBook();
-    g.__niyamBookDb = createDb(book.loans, book.capital);
+/** The 90-day synthetic book used for backtests, built once per bank per server instance. */
+export function getBookDb(key: BookKey = DEFAULT_BOOK): Promise<Database> {
+  g.__niyamBook ??= {};
+  if (!g.__niyamBook[key.id]) {
+    const book = generateLoanBook(key.seed, DAYS, key.shape);
+    g.__niyamBook[key.id] = createDb(book.loans, book.capital);
   }
-  return g.__niyamBookDb;
+  return g.__niyamBook[key.id];
 }
 
 /**
  * The 12 days after approval, continuing the same seeded walk. With `drift`, the loan feed is
  * loaded twice from rollout day 10 (a duplicated ETL batch), doubling every exposure.
  */
-export function getForwardDb(drift: boolean): Promise<Database> {
+export function getForwardDb(drift: boolean, bk: BookKey = DEFAULT_BOOK): Promise<Database> {
   g.__niyamForward ??= {};
-  const key = drift ? "drift" : "clean";
+  const key = `${bk.id}:${drift ? "drift" : "clean"}`;
   if (!g.__niyamForward[key]) {
-    const book = generateLoanBook(undefined, 90 + FORWARD_DAYS);
+    const book = generateLoanBook(bk.seed, 90 + FORWARD_DAYS, bk.shape);
     const fwdDates = new Set(book.dates.slice(90));
     const driftDates = new Set(book.dates.slice(90 + DRIFT_FROM_DAY - 1));
     const loans: LoanRow[] = [];

@@ -6,6 +6,8 @@ const LINKS = [
   { href: "/existing", label: "Existing solution" },
   { href: "/solution", label: "Our solution & uniqueness" },
   { href: "/architecture", label: "Architecture" },
+  { href: "/business", label: "Business & target segment" },
+  { href: "/market", label: "Market size & future scope" },
   { href: "/research", label: "Research" },
   { href: "/jatayu", label: "Jatayu" },
 ];
@@ -19,17 +21,17 @@ export function Nav({ tone = "light", console = false }: { tone?: "light" | "sur
           <Wordmark />
         </Link>
         <div className="flex items-center gap-2 sm:gap-5">
-          <ul className="m-0 hidden items-center gap-5 p-0 xl:flex">
+          <ul className="m-0 hidden items-center gap-4 p-0 2xl:flex">
             {LINKS.map((l) => (
               <li key={l.href} className="list-none">
-                <Link href={l.href} className="ui whitespace-nowrap text-[15px] text-ink no-underline transition-colors hover:text-accent">
+                <Link href={l.href} className="ui whitespace-nowrap text-[14.5px] text-ink no-underline transition-colors hover:text-accent">
                   {l.label}
                 </Link>
               </li>
             ))}
           </ul>
-          {/* Below xl: the same links in a menu that needs no JavaScript. */}
-          <details className="group xl:hidden">
+          {/* Below 2xl: the same links in a menu that needs no JavaScript. */}
+          <details className="group 2xl:hidden">
             <summary className="ui flex cursor-pointer list-none items-center gap-1.5 px-2 py-1 text-[15px] text-ink hover:text-accent [&::-webkit-details-marker]:hidden">
               Menu
               <span aria-hidden="true" className="text-[11px] transition-transform group-open:rotate-180">

@@ -70,8 +70,24 @@ export interface LoanBook {
  */
 const LARGE_GROUP_TARGETS = [16.4, 14.6, 13.8, 13.1, 12.5, 12.1, 11.7, 11.2, 10.4, 9.6, 8.9, 8.1];
 
-export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS): LoanBook {
+/**
+ * Where a bank's large groups sit. Targets are placed in the band between the bank's new and old
+ * group limits (the default reproduces the original 12% / 15% book exactly), and every amount
+ * scales with the bank's Tier 1 capital.
+ */
+export interface BookShape {
+  tier1: number;
+  groupNew: number;
+  groupOld: number;
+}
+
+export const DEFAULT_SHAPE: BookShape = { tier1: TIER1_CR, groupNew: 12, groupOld: 15 };
+
+export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS, shape: BookShape = DEFAULT_SHAPE): LoanBook {
   const rand = mulberry32(seed);
+  const TIER1 = shape.tier1;
+  const scale = TIER1 / TIER1_CR;
+  const place = (x: number) => shape.groupNew + ((x - 12) * (shape.groupOld - shape.groupNew)) / 3;
   const borrowers: Borrower[] = [];
   const boardApproved = new Set(["GRP-003", "GRP-005"]);
   const pick = () => SECTORS[Math.floor(rand() * SECTORS.length)];
@@ -79,7 +95,7 @@ export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS): LoanBook {
   // Large connected groups. The lead borrower carries most of the group's exposure.
   LARGE_GROUP_TARGETS.forEach((target, gi) => {
     const gid = `GRP-${String(gi + 1).padStart(3, "0")}`;
-    const total = (target / 100) * TIER1_CR;
+    const total = (place(target) / 100) * TIER1;
     const members = 2 + Math.floor(rand() * 3);
     const leadShare = 0.55 + rand() * 0.25;
     for (let m = 0; m < members; m++) {
@@ -98,7 +114,7 @@ export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS): LoanBook {
   // Mid-sized groups.
   for (let g = LARGE_GROUP_TARGETS.length + 1; g <= 48; g++) {
     const gid = `GRP-${String(g).padStart(3, "0")}`;
-    const total = ((1.2 + rand() * 2.2) / 100) * TIER1_CR;
+    const total = ((1.2 + rand() * 2.2) / 100) * TIER1;
     const members = 2 + Math.floor(rand() * 3);
     for (let m = 0; m < members; m++) {
       borrowers.push({
@@ -118,7 +134,7 @@ export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS): LoanBook {
       id: `BRW-${String(borrowers.length + 1).padStart(4, "0")}`,
       group: `SOLO-${String(i + 1).padStart(4, "0")}`,
       sector: pick(),
-      base: 0.15 + rand() * 0.9,
+      base: (0.15 + rand() * 0.9) * scale,
       trend: (rand() - 0.5) * 0.001,
       vol: 0.004 + rand() * 0.006,
     });
@@ -132,7 +148,7 @@ export function generateLoanBook(seed = LOAN_BOOK_SEED, days = DAYS): LoanBook {
   for (let d = 0; d < days; d++) {
     const asOf = addDays(START_DATE, d);
     dates.push(asOf);
-    capital.push({ as_of: asOf, tier1_amt: TIER1_CR });
+    capital.push({ as_of: asOf, tier1_amt: TIER1 });
     borrowers.forEach((b, i) => {
       // Mean-reverting deviation around a slowly drifting level.
       dev[i] = 0.86 * dev[i] + (rand() - 0.5) * 2 * b.vol * 2.2;

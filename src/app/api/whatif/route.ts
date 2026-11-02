@@ -1,5 +1,6 @@
 import { compileRule } from "@/niyam/dsl/compile";
 import { parseRule, RuleParseError, type Rule } from "@/niyam/dsl/schema";
+import { bankByKey } from "@/niyam/data/banks";
 import { getBookDb, runQuery, type AlertRow } from "@/niyam/sql/engine";
 
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ export const maxDuration = 30;
  * with the same deterministic compiler and runs it on the same 90-day SYNTHETIC book used by the
  * backtest. Read-only: nothing is written to the rule repo, the graph or the live engine.
  *
- * POST { yaml: string, thresholds?: number[], oldValue?: number }
+ * POST { yaml: string, thresholds?: number[], oldValue?: number, bank?: string }
  *  -> { ruleId, metric, op, value, oldValue, minutesPerAlert, days, synthetic, points: [{ threshold, alerts, subjects, analystHours }] }
  */
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
   if (!raw) return bad(400, "Empty body");
   if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) return bad(413, `Body exceeds ${MAX_BODY_BYTES} bytes`);
 
-  let body: { yaml?: unknown; thresholds?: unknown; oldValue?: unknown };
+  let body: { yaml?: unknown; thresholds?: unknown; oldValue?: unknown; bank?: unknown };
   try {
     body = JSON.parse(raw);
   } catch {
@@ -82,7 +83,8 @@ export async function POST(req: Request) {
   }
   if (thresholds.length > MAX_THRESHOLDS) thresholds = thresholds.slice(0, MAX_THRESHOLDS);
 
-  const db = await getBookDb();
+  const bank = bankByKey(typeof body.bank === "string" ? body.bank : undefined);
+  const db = await getBookDb({ id: bank.key, ...bank.book });
   const days = Number(db.exec("SELECT COUNT(DISTINCT as_of) FROM capital")[0]?.values[0]?.[0] ?? 0);
   const runAt = (value: number) => runQuery(db, compileRule({ ...rule, when: { ...rule.when, value } }).sql);
   const op = rule.when.op;

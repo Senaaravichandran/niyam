@@ -8,3 +8,6 @@ assets/
 .playwright-mcp/
 tests/
 .work/
+
+# Served to the console and the bank sites
+!public/bank-rules/*.pdf

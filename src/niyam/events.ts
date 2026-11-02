@@ -133,4 +133,6 @@ export interface ReleaseBundle {
   /** The exact circular this run read, signed into the pack. */
   circular?: { ref: string; title: string; text: string; synthetic: boolean };
   entityType?: string;
+  /** Which bank the pack was produced for. */
+  bankKey?: string;
 }

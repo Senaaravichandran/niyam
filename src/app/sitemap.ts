@@ -8,6 +8,8 @@ const ROUTES: { path: string; priority: number }[] = [
   { path: "/problem", priority: 0.9 },
   { path: "/existing", priority: 0.8 },
   { path: "/solution", priority: 0.9 },
+  { path: "/business", priority: 0.8 },
+  { path: "/market", priority: 0.8 },
   { path: "/try", priority: 0.8 },
   { path: "/jatayu", priority: 0.8 },
   { path: "/architecture", priority: 0.7 },

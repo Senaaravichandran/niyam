@@ -1,7 +1,6 @@
 import type { Database } from "sql.js";
 import { compileRule } from "../dsl/compile";
 import { parseRule } from "../dsl/schema";
-import { EXISTING_RULES } from "../data/seed";
 import { DRAFT_BRANCH, type NiyamContext } from "../context";
 import type { AgentTools } from "../mcp/client";
 import { DRIFT_FROM_DAY, FORWARD_DAYS, getForwardDb, runQuery } from "../sql/engine";
@@ -75,11 +74,11 @@ export async function runReleaseAgent(ctx: NiyamContext, tools: AgentTools, inpu
   ctx.emit({ type: "promote", commit: promoted.short, branch: "main" });
 
   // 3. Roll out day by day under Sentinel watch.
-  const db = await getForwardDb(injectDrift);
+  const db = await getForwardDb(injectDrift, { id: ctx.bank.key, ...ctx.bank.book });
   const dates = (db.exec("SELECT as_of FROM capital ORDER BY as_of")[0]?.values ?? []).map((v) => String(v[0]));
   const v2 = bundle.drafts.map((d) => ({ draft: d, rule: parseRule(d.yaml), byDay: byDay(db, compileRule(parseRule(d.yaml)).sql) }));
   const v1ByRule = new Map(
-    EXISTING_RULES.map((r) => [r.rule_id, byDay(db, compileRule(r).sql)]),
+    ctx.bank.rules.map((r) => [r.rule_id, byDay(db, compileRule(r).sql)]),
   );
   const forecast = new Map(bundle.impact.rules.map((r) => [r.ruleId, r]));
   const alerts: AlertRecord[] = [];
