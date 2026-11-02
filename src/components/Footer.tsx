@@ -6,9 +6,11 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Product",
     links: [
-      { href: "/console", label: "Pipeline console" },
-      { href: "/try", label: "Try a circular" },
+      { href: "/problem", label: "The problem" },
+      { href: "/existing", label: "Existing solution" },
+      { href: "/solution", label: "Our solution" },
       { href: "/architecture", label: "Architecture" },
+      { href: "/console", label: "Pipeline console" },
     ],
   },
   {
@@ -38,8 +40,8 @@ export function Footer({ credits = [] as (keyof typeof PICTURES)[] }) {
             <Link href="/console" className="btn">
               Run the pipeline
             </Link>
-            <Link href="/try" className="btn bg-navy-2 hover:bg-[#1b3a66]">
-              Try a circular
+            <Link href="/problem" className="btn bg-navy-2 hover:bg-[#1b3a66]">
+              Start with the problem
             </Link>
           </div>
         </div>

@@ -5,6 +5,9 @@ const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://niyam-virtusa.vercel.
 const ROUTES: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
   { path: "/console", priority: 0.9 },
+  { path: "/problem", priority: 0.9 },
+  { path: "/existing", priority: 0.8 },
+  { path: "/solution", priority: 0.9 },
   { path: "/try", priority: 0.8 },
   { path: "/jatayu", priority: 0.8 },
   { path: "/architecture", priority: 0.7 },
