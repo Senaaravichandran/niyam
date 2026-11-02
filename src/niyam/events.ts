@@ -67,7 +67,12 @@ export interface RolloutDay {
   day: string;
   index: number;
   phase: "shadow" | "canary" | "live";
-  perRule: Record<string, { observed: number; band: [number, number]; z: number; drift: boolean; mode: string }>;
+  /**
+   * observed: alerts the new rule raised; v1: alerts the old rule raises on the same day (absent for
+   * a brand-new rule); enforced: new-rule alerts that actually took effect (0 in shadow, the canary
+   * share in canary, all when live).
+   */
+  perRule: Record<string, { observed: number; band: [number, number]; z: number; drift: boolean; mode: string; v1?: number; enforced?: number }>;
   drifted: boolean;
 }
 
@@ -135,4 +140,6 @@ export interface ReleaseBundle {
   entityType?: string;
   /** Which bank the pack was produced for. */
   bankKey?: string;
+  /** The visitor's own bank, when bankKey is "custom"; signed with the pack. */
+  customBank?: import("./data/banks").CustomBankInput;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import YAML from "yaml";
-import { bankByKey } from "@/niyam/data/banks";
+import { resolveBank } from "@/niyam/data/banks";
 import type { RunState } from "./state";
 
 /**
@@ -64,7 +64,7 @@ export function WhatIf({ s }: { s: RunState }) {
   const [pick, setPick] = useState<Record<string, number>>({});
 
   const selected = drafts.find((d) => d.ruleId === ruleId) ?? drafts[0];
-  const bank = bankByKey(s.bundle?.bankKey);
+  const bank = resolveBank(s.bundle?.bankKey, s.bundle?.customBank);
   const oldValue = selected ? bank.rules.find((r) => r.rule_id === selected.ruleId)?.when.value ?? null : null;
   const cacheKey = selected ? `${s.bundle?.bankKey ?? ""}:${selected.ruleId}@${selected.version}:${selected.yaml.length}` : "";
   const data = cacheKey ? cache[cacheKey] : undefined;
@@ -77,7 +77,7 @@ export function WhatIf({ s }: { s: RunState }) {
     fetch("/api/whatif", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yaml: selected.yaml, bank: bank.key, ...(oldValue != null ? { oldValue } : {}) }),
+      body: JSON.stringify({ yaml: selected.yaml, bank: bank.key, customBank: s.bundle?.customBank, ...(oldValue != null ? { oldValue } : {}) }),
       signal: ctrl.signal,
     })
       .then(async (res) => {

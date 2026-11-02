@@ -201,6 +201,7 @@ export interface SignablePack {
   circular?: { ref: string; title: string; text: string; synthetic: boolean };
   entityType?: string;
   bankKey?: string;
+  customBank?: unknown;
 }
 
 function packBody(p: SignablePack) {
@@ -217,6 +218,7 @@ function packBody(p: SignablePack) {
     circular: p.circular ? { ref: p.circular.ref, title: p.circular.title, sha256: sha256(p.circular.text), synthetic: p.circular.synthetic } : null,
     entityType: p.entityType ?? null,
     bankKey: p.bankKey ?? null,
+    customBank: p.customBank ?? null,
   });
 }
 

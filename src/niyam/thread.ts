@@ -1,5 +1,5 @@
 import { CIRCULAR } from "./data/circular";
-import { bankByKey } from "./data/banks";
+import { resolveBank } from "./data/banks";
 import { toYaml } from "./dsl/schema";
 import type { AlertRecord, ApprovalView, ReleaseBundle, ThreadView } from "./events";
 
@@ -14,7 +14,7 @@ export function buildThread(
   commits: Record<string, string> = {},
 ): ThreadView {
   if (alert.mode === "v1" || alert.version === 1) {
-    const r = bankByKey(bundle.bankKey).rules.find((x) => x.rule_id === alert.ruleId);
+    const r = resolveBank(bundle.bankKey, bundle.customBank).rules.find((x) => x.rule_id === alert.ruleId);
     return {
       alert,
       rule: { ruleId: alert.ruleId, version: 1, yaml: r ? toYaml(r) : "", title: r?.title ?? alert.ruleId, commit: commits["seed"] },

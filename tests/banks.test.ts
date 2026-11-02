@@ -62,3 +62,24 @@ describe("circular subject", () => {
     expect(subjectOf("RESERVE BANK OF INDIA (SYNTHETIC SAMPLE)\nRBI/2026-27/SYN-031\nMadam / Sir,\nLarge Exposures Framework\n1. Applicability.")).toBe("Large Exposures Framework");
   });
 });
+
+describe("a bank the visitor defines", () => {
+  it("validates input and runs end to end on the bank's own rules", async () => {
+    const { cleanCustomBank, CUSTOM_DEFAULT } = await import("@/niyam/data/banks");
+    expect(cleanCustomBank({ ...CUSTOM_DEFAULT, name: "" })).toMatch(/Bank name/);
+    expect(cleanCustomBank({ ...CUSTOM_DEFAULT, tier1: 1 })).toMatch(/Tier 1/);
+    const custom = cleanCustomBank({ ...CUSTOM_DEFAULT, name: "Judge Co-op Bank", single: { op: ">", value: 15 }, group: { op: ">=", value: 15, boardException: true } });
+    expect(typeof custom).not.toBe("string");
+    const ctx = await createContext({ bank: "custom", customBank: custom as Exclude<typeof custom, string> });
+    expect(ctx.bank.short).toBe("Judge Co-op Bank");
+    const bundle = await runProposal(ctx);
+    expect(bundle.customBank?.name).toBe("Judge Co-op Bank");
+    expect(bundle.drafts.length).toBeGreaterThan(0);
+    expect(bundle.testsPassed).toBe(bundle.testsTotal);
+    expect(bundle.mapping.conflicts.length).toBe(1);
+    const tokens: Record<string, string[]> = {};
+    for (const d of bundle.drafts) tokens[d.ruleId] = APPROVERS.map((a) => issueToken({ rule_id: d.ruleId, version: d.version, yaml: d.yaml }, a, undefined, bundle.runId).token);
+    const res = await runRelease(await createContext({ bank: "custom", customBank: bundle.customBank }), { bundle, tokens, injectDrift: false });
+    expect(res.ok).toBe(true);
+  });
+});

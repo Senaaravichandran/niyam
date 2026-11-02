@@ -114,7 +114,7 @@ export async function runReleaseAgent(ctx: NiyamContext, tools: AgentTools, inpu
       if (rolledBack.has(draft.ruleId)) {
         const v1rows = v1ByRule.get(draft.ruleId)?.get(day) ?? [];
         for (const r of v1rows) alerts.push({ id: alertId(draft.ruleId, 1, day, r.subject_id), ruleId: draft.ruleId, version: 1, day, subject: r.subject_id, metricValue: r.metric_value, mode: "v1" });
-        perRule[draft.ruleId] = { observed: v1rows.length, band: [0, 0], z: 0, drift: false, mode: "rolled_back (v1)" };
+        perRule[draft.ruleId] = { observed: v1rows.length, band: [0, 0], z: 0, drift: false, mode: "rolled_back (v1)", v1: v1rows.length, enforced: 0 };
         continue;
       }
       const f = forecast.get(draft.ruleId);
@@ -126,10 +126,13 @@ export async function runReleaseAgent(ctx: NiyamContext, tools: AgentTools, inpu
         forecast_sd: f.forecastSd,
         k: 3,
       });
-      perRule[draft.ruleId] = { observed: today.length, band: check.band, z: check.z, drift: check.drift, mode: phase };
+      // A rule the bank already had reports the old version's count (0 on a quiet day); a new rule has none.
+      const v1Days = v1ByRule.get(draft.ruleId);
+      perRule[draft.ruleId] = { observed: today.length, band: check.band, z: check.z, drift: check.drift, mode: phase, v1: v1Days ? (v1Days.get(day)?.length ?? 0) : undefined, enforced: 0 };
       for (const r of today) {
         const inCanary = bucket(r.subject_id) < CANARY_PCT;
         if (phase === "canary" && !inCanary) continue;
+        if (phase !== "shadow") perRule[draft.ruleId].enforced! += 1;
         alerts.push({ id: alertId(draft.ruleId, draft.version, day, r.subject_id), ruleId: draft.ruleId, version: draft.version, day, subject: r.subject_id, metricValue: r.metric_value, mode: phase });
       }
       if (check.drift) {

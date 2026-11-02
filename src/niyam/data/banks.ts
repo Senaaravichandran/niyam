@@ -10,7 +10,7 @@ import { EXISTING_RULES, OLD_MD, POLICIES, type PolicyClause } from "./seed";
  * operations site. Names, numbers and circulars are fictional.
  */
 
-export type BankKey = "abc" | "def" | "ghi" | "jkl";
+export type BankKey = "abc" | "def" | "ghi" | "jkl" | "custom";
 
 export interface BankDef {
   key: BankKey;
@@ -273,6 +273,122 @@ export function bankByHost(host?: string | null): BankDef | undefined {
 
 /** Public URL of a bank's operations site: its own subdomain in production, a path elsewhere. */
 export function bankSiteUrl(b: BankDef, origin?: string): string {
-  if (origin && /localhost|127\.0\.0\.1/.test(origin)) return `${origin}/bank/${b.key}`;
+  // A visitor's own bank has no subdomain; it is served on this site.
+  if (!b.host || (origin && /localhost|127\.0\.0\.1/.test(origin))) return `${origin ?? ""}/bank/${b.key}`;
   return `https://${b.host}`;
+}
+
+/* ---------- a bank the visitor defines ---------- */
+
+/** What a judge types to add their own bank. Everything else is derived from it. */
+export interface CustomBankInput {
+  name: string;
+  entityType: BankProfile["entityType"];
+  tier1: number;
+  single: { op: ">" | ">="; value: number };
+  group: { op: ">" | ">="; value: number; boardException: boolean };
+}
+
+export const CUSTOM_DEFAULT: CustomBankInput = {
+  name: "My Bank",
+  entityType: "UCB",
+  tier1: 600,
+  single: { op: ">", value: 15 },
+  group: { op: ">=", value: 15, boardException: true },
+};
+
+const ENTITY_KINDS: Record<BankProfile["entityType"], string> = {
+  UCB: "Urban co-operative bank",
+  "NBFC-ML": "NBFC, middle layer",
+  "NBFC-UL": "NBFC, upper layer",
+  SCB: "Scheduled commercial bank",
+};
+
+/** Validates a custom bank; returns an error message or the cleaned input. */
+export function cleanCustomBank(v: unknown): CustomBankInput | string {
+  const o = (v ?? {}) as Record<string, unknown>;
+  const s = (o.single ?? {}) as Record<string, unknown>;
+  const g = (o.group ?? {}) as Record<string, unknown>;
+  const name = typeof o.name === "string" ? o.name.replace(/\s+/g, " ").trim().slice(0, 40) : "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9 &.'-]{1,39}$/.test(name)) return "Bank name: 2 to 40 letters, digits, spaces, & . ' -";
+  if (!["UCB", "NBFC-ML", "NBFC-UL", "SCB"].includes(String(o.entityType))) return "Choose a licence type";
+  const num = (x: unknown) => (typeof x === "number" ? x : Number(x));
+  const tier1 = num(o.tier1);
+  if (!Number.isFinite(tier1) || tier1 < 10 || tier1 > 500_000) return "Tier 1 capital must be between ₹10 crore and ₹5,00,000 crore";
+  const op = (x: unknown) => (x === ">=" ? ">=" : ">") as ">" | ">=";
+  const sv = num(s.value);
+  const gv = num(g.value);
+  if (!Number.isFinite(sv) || sv < 1 || sv > 60) return "Single counterparty limit must be between 1% and 60%";
+  if (!Number.isFinite(gv) || gv < 1 || gv > 80) return "Group limit must be between 1% and 80%";
+  return {
+    name,
+    entityType: o.entityType as BankProfile["entityType"],
+    tier1: Math.round(tier1),
+    single: { op: op(s.op), value: Math.round(sv * 100) / 100 },
+    group: { op: op(g.op), value: Math.round(gv * 100) / 100, boardException: g.boardException === true },
+  };
+}
+
+function seedOf(text: string) {
+  let h = 2166136261;
+  for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return (h >>> 0) % 1_000_000;
+}
+
+/** Builds a full bank from what the visitor typed: profile, two live rules, policy and loan book. */
+export function customBank(input: CustomBankInput): BankDef {
+  const scope = [input.entityType];
+  const policies: PolicyClause[] = [
+    {
+      id: "CUS-POL-01-1.1",
+      policy: `${input.name} Credit Policy`,
+      section: "1.1",
+      text: "Exposures to single counterparties and groups shall be monitored daily against the regulatory limits.",
+      implementedBy: ["SYN-EXP-011", "SYN-EXP-012"],
+    },
+  ];
+  if (input.group.boardException) {
+    policies.push({
+      id: "CUS-POL-01-1.2",
+      policy: `${input.name} Credit Policy`,
+      section: "1.2",
+      text: `The Board may approve a group exposure of up to ${input.group.value} per cent of Tier 1 capital; approved exposures are not reported as breaches.`,
+      implementedBy: ["SYN-EXP-012"],
+      permits: { metric: "group_exposure_pct_tier1", upTo: input.group.value, condition: "board_approved" },
+    });
+  }
+  return {
+    key: "custom",
+    short: input.name,
+    kind: ENTITY_KINDS[input.entityType],
+    profile: {
+      id: "BANK-CUSTOM",
+      name: `${input.name} (SYNTHETIC)`,
+      entityType: input.entityType,
+      tier: ENTITY_KINDS[input.entityType],
+      state: "Your choice",
+      tier1CapitalCr: input.tier1,
+      products: ["Loans"],
+      synthetic: true,
+    },
+    rules: [
+      rule("SYN-EXP-011", scope, input.single.op, input.single.value, "5.2", `exposure to a single counterparty exceeding ${input.single.value} per cent of Tier 1 capital`),
+      rule("SYN-EXP-012", scope, input.group.op, input.group.value, "5.3", `group exposure of ${input.group.value} per cent of Tier 1 capital`, input.group.boardException ? "board_approved" : undefined),
+    ],
+    policies,
+    // The synthetic book is placed around the bank's own group limit, so a tighter circular bites.
+    book: { seed: seedOf(input.name), shape: { tier1: input.tier1, groupNew: Math.max(1, input.group.value * 0.8), groupOld: input.group.value } },
+    circular: { ref: "", title: "", pdf: "", text: "" },
+    host: "",
+    brand: "#0f766e",
+  };
+}
+
+/** The bank for a run: one of the four, or the visitor's own when `custom` is given. */
+export function resolveBank(key?: string | null, custom?: unknown): BankDef {
+  if (key === "custom" && custom) {
+    const c = cleanCustomBank(custom);
+    if (typeof c !== "string") return customBank(c);
+  }
+  return bankByKey(key);
 }

@@ -1,6 +1,6 @@
 import type { Database } from "sql.js";
 import type { BankProfile } from "./data/bankProfile";
-import { bankByKey, type BankDef } from "./data/banks";
+import { resolveBank, type BankDef, type CustomBankInput } from "./data/banks";
 import { CIRCULAR, type CircularSource } from "./data/circular";
 import { METRICS } from "./data/semanticModel";
 import { toYaml } from "./dsl/schema";
@@ -44,6 +44,7 @@ export interface NiyamContext {
   circular: CircularSource;
   /** The bank this run is for: its live rules, internal policies and loan book. */
   bank: BankDef;
+  customBank?: CustomBankInput;
   profile: BankProfile;
   graph: KnowledgeGraph;
   repo: RuleRepo;
@@ -73,9 +74,11 @@ export async function createContext(opts: {
   profile?: BankProfile;
   /** Bank key (abc, def, ghi, jkl); defaults to the original demo bank. */
   bank?: string;
+  /** The visitor's own bank, used when `bank` is "custom". */
+  customBank?: CustomBankInput;
   emit?: (e: RunEvent) => void;
 } = {}): Promise<NiyamContext> {
-  const bank = bankByKey(opts.bank);
+  const bank = resolveBank(opts.bank, opts.customBank);
   const circular = opts.circular ?? CIRCULAR;
   const graph = new KnowledgeGraph();
   seedGraph(graph, bank);
@@ -92,6 +95,7 @@ export async function createContext(opts: {
     path: opts.path ?? "rule-based",
     circular,
     bank,
+    customBank: bank.key === "custom" ? opts.customBank : undefined,
     profile: opts.profile ?? bank.profile,
     graph,
     repo,

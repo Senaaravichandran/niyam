@@ -1,6 +1,20 @@
 "use client";
 
+import type { BankDef } from "@/niyam/data/banks";
 import type { ApprovalView, ReleaseBundle, RunEvent } from "@/niyam/events";
+
+/** What a bank site needs to draw itself; sent with the release so a visitor's own bank works too. */
+export type BankSiteDef = Pick<BankDef, "key" | "short" | "kind" | "profile" | "rules" | "policies" | "brand" | "host" | "circular">;
+
+/** How the language work in this run was done, for the bank site's explanation. */
+export interface LlmSummary {
+  model: string;
+  calls: number;
+  agents: string[];
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
 
 /**
  * Live link from the console to a bank's rule-engine site. The console opens the site in its own
@@ -9,7 +23,7 @@ import type { ApprovalView, ReleaseBundle, RunEvent } from "@/niyam/events";
  */
 
 export type RelayMessage =
-  | { niyam: 1; kind: "init"; bank: string; bundle: ReleaseBundle; approvals: ApprovalView[]; path?: string }
+  | { niyam: 1; kind: "init"; bank: string; bundle: ReleaseBundle; approvals: ApprovalView[]; path?: string; bankDef?: BankSiteDef; llm?: LlmSummary }
   | { niyam: 1; kind: "event"; event: RunEvent }
   | { niyam: 1; kind: "ready"; bank: string };
 

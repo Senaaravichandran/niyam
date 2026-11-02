@@ -1,5 +1,5 @@
 import { ENTITY_LABEL, type BankProfile, type EntityType } from "./data/bankProfile";
-import { bankByKey } from "./data/banks";
+import { resolveBank } from "./data/banks";
 import { CIRCULAR, type CircularSource } from "./data/circular";
 
 /**
@@ -10,8 +10,8 @@ export const ENTITY_TYPES: EntityType[] = ["UCB", "NBFC-ML", "NBFC-UL", "SCB"];
 export const MAX_CIRCULAR_CHARS = 20_000;
 
 /** The chosen bank's profile; an explicit licence type that differs from the bank's overrides it. */
-export function profileFor(entity?: string, bankKey?: string): BankProfile {
-  const base = bankByKey(bankKey).profile;
+export function profileFor(entity?: string, bankKey?: string, custom?: unknown): BankProfile {
+  const base = resolveBank(bankKey, custom).profile;
   const e = (ENTITY_TYPES as string[]).includes(entity ?? "") ? (entity as EntityType) : base.entityType;
   if (e === base.entityType) return base;
   const name = e === "SCB" ? "Demo Commercial Bank (SYNTHETIC)" : e.startsWith("NBFC") ? `Demo ${ENTITY_LABEL[e]} (SYNTHETIC)` : base.name;

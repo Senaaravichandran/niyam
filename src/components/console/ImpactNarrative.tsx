@@ -1,7 +1,7 @@
 "use client";
 
 import YAML from "yaml";
-import { bankByKey } from "@/niyam/data/banks";
+import { resolveBank } from "@/niyam/data/banks";
 import type { RunState } from "./state";
 
 /**
@@ -89,10 +89,10 @@ export function ImpactNarrative({ s }: { s: RunState }) {
   const tests = s.testsTotal ?? { passed: b.testsPassed, total: b.testsTotal };
   const finalRound = Math.max(0, ...s.drafts.map((d) => d.round));
 
-  const bankName = bankByKey(b.bankKey).profile.name.replace(/\s*\(SYNTHETIC\)\s*$/i, "");
+  const bankName = resolveBank(b.bankKey, b.customBank).profile.name.replace(/\s*\(SYNTHETIC\)\s*$/i, "");
   const rules = b.drafts.map((d) => {
     const y = parse(d.yaml);
-    const live = bankByKey(b.bankKey).rules.find((r) => r.rule_id === d.ruleId);
+    const live = resolveBank(b.bankKey, b.customBank).rules.find((r) => r.rule_id === d.ruleId);
     const ob = b.obligations.find((o) => o.id === d.obligationId);
     const clause = ob?.clauseNumber ?? y.source?.clause;
     return { d, y, live, clause };

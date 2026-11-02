@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ENTITY_LABEL } from "@/niyam/data/bankProfile";
-import { BANKS, bankByKey, bankSiteUrl, type BankKey } from "@/niyam/data/banks";
+import { ENTITY_LABEL, type EntityType } from "@/niyam/data/bankProfile";
+import { BANKS, CUSTOM_DEFAULT, bankByKey, bankSiteUrl, cleanCustomBank, customBank, type BankDef, type BankKey, type CustomBankInput } from "@/niyam/data/banks";
 
 export interface SetupValue {
   bank: BankKey;
+  /** The visitor's own bank, used when `bank` is "custom". */
+  custom: CustomBankInput;
   /** Where the circular text came from. */
   source: "bank-pdf" | "upload" | "paste";
+  /** Which of the four circular PDFs was loaded (for a custom bank, any of them). */
+  pdfOf?: Exclude<BankKey, "custom">;
   ref: string;
   text: string;
   /** How the text was read, shown to the user. */
@@ -15,12 +19,19 @@ export interface SetupValue {
 }
 
 const first = bankByKey("ghi");
-export const DEFAULT_SETUP: SetupValue = { bank: first.key, source: "bank-pdf", ref: first.circular.ref, text: first.circular.text, intake: "Built-in text (loading the PDF…)" };
+export const DEFAULT_SETUP: SetupValue = { bank: "ghi", custom: CUSTOM_DEFAULT, source: "bank-pdf", pdfOf: "ghi", ref: first.circular.ref, text: first.circular.text, intake: "Built-in text (loading the PDF…)" };
+
+/** The bank a setup describes: one of the four, or the visitor's own (falling back to defaults while the form is incomplete). */
+export function setupBank(v: SetupValue): BankDef {
+  if (v.bank !== "custom") return bankByKey(v.bank);
+  const c = cleanCustomBank(v.custom);
+  return customBank(typeof c === "string" ? CUSTOM_DEFAULT : c);
+}
 
 const DATA: [string, string][] = [
-  ["The banks", "ABC Bank, DEF Bank, GHI Co-operative Bank and JKL Finance are fictional. Each has its own licence type, Tier 1 capital, live rules and internal policy."],
+  ["The banks", "ABC Bank, DEF Bank, GHI Co-operative Bank and JKL Finance are fictional. Each has its own licence type, Tier 1 capital, live rules and internal policy. You can also add your own."],
   ["The circulars", "Each bank's circular is a synthetic PDF written in RBI's style (in /bank-rules), with limits chosen so nobody mistakes them for real RBI limits. NIYAM reads the PDF's text layer the same way it would read RBI's."],
-  ["The loan books", "Each bank has its own 90-day synthetic loan book (706 borrowers, 48 connected groups) generated from a fixed seed and scaled to its capital. No real customer data is used anywhere."],
+  ["The loan books", "Every bank, including yours, gets a 90-day synthetic loan book (706 borrowers, 48 connected groups) from a fixed seed, scaled to its capital and placed around its own limits. No real customer data is used anywhere."],
   ["The approvers", "Two roles, maker and checker. You type the names, IDs and reasons; they are signed into the approval token."],
   ["Your own circular", "Upload a PDF with a text layer, a Word file or plain text, or paste text. Numbered paragraphs work best. Scanned PDFs need OCR, which this deployment does not run."],
   ["Real numbers", "Only the RBI statistics on the Problem and Research pages are real, each cited to its source."],
@@ -42,30 +53,92 @@ async function extract(file: File): Promise<{ text: string; method: string; page
 }
 
 const METHOD: Record<string, string> = { "pdf-text-layer": "PDF text layer", docx: "Word document", "plain-text": "plain text" };
+const PRESET = BANKS.map((b) => b.key) as Exclude<BankKey, "custom">[];
+
+function CustomForm({ value, onChange, disabled }: { value: CustomBankInput; onChange: (v: CustomBankInput) => void; disabled: boolean }) {
+  const err = cleanCustomBank(value);
+  const field = "mt-1 block w-full bg-bg px-3 py-2 text-[14px] text-ink outline-none focus:bg-white disabled:opacity-60";
+  return (
+    <div className="mt-3 bg-bg p-3">
+      <p className="text-[13px] text-muted">Describe your bank. NIYAM builds its live rules, policy and a synthetic loan book from this.</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <label className="text-[12.5px] text-muted">
+          Bank name
+          <input className={field} value={value.name} maxLength={40} disabled={disabled} onChange={(e) => onChange({ ...value, name: e.target.value })} />
+        </label>
+        <label className="text-[12.5px] text-muted">
+          Licence type
+          <select className={field} value={value.entityType} disabled={disabled} onChange={(e) => onChange({ ...value, entityType: e.target.value as EntityType })}>
+            {(Object.keys(ENTITY_LABEL) as EntityType[]).map((k) => (
+              <option key={k} value={k}>
+                {ENTITY_LABEL[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-[12.5px] text-muted">
+          Tier 1 capital (₹ crore)
+          <input className={field} type="number" min={10} max={500000} value={value.tier1} disabled={disabled} onChange={(e) => onChange({ ...value, tier1: Number(e.target.value) })} />
+        </label>
+        <div />
+        <div className="text-[12.5px] text-muted">
+          Live rule 1: single counterparty fires when
+          <div className="mt-1 flex gap-2">
+            <select className={`${field} !w-20`} value={value.single.op} disabled={disabled} onChange={(e) => onChange({ ...value, single: { ...value.single, op: e.target.value as ">" | ">=" } })}>
+              <option value=">">&gt;</option>
+              <option value=">=">&gt;=</option>
+            </select>
+            <input className={field} type="number" step="0.5" min={1} max={60} value={value.single.value} disabled={disabled} onChange={(e) => onChange({ ...value, single: { ...value.single, value: Number(e.target.value) } })} />
+            <span className="self-center text-ink">%</span>
+          </div>
+        </div>
+        <div className="text-[12.5px] text-muted">
+          Live rule 2: group of connected borrowers fires when
+          <div className="mt-1 flex gap-2">
+            <select className={`${field} !w-20`} value={value.group.op} disabled={disabled} onChange={(e) => onChange({ ...value, group: { ...value.group, op: e.target.value as ">" | ">=" } })}>
+              <option value=">">&gt;</option>
+              <option value=">=">&gt;=</option>
+            </select>
+            <input className={field} type="number" step="0.5" min={1} max={80} value={value.group.value} disabled={disabled} onChange={(e) => onChange({ ...value, group: { ...value.group, value: Number(e.target.value) } })} />
+            <span className="self-center text-ink">%</span>
+          </div>
+        </div>
+      </div>
+      <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13.5px] text-ink">
+        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#1d4ed8]" checked={value.group.boardException} disabled={disabled} onChange={(e) => onChange({ ...value, group: { ...value.group, boardException: e.target.checked } })} />
+        Our policy lets the Board approve a group up to that limit, and such exposures are not reported
+      </label>
+      {typeof err === "string" && <p className="mt-2 bg-bad-soft px-3 py-2 text-[13px] text-bad">{err}</p>}
+    </div>
+  );
+}
 
 export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onChange: (v: SetupValue) => void; disabled: boolean }) {
   const [showData, setShowData] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
-  const bank = bankByKey(value.bank);
+  const bank = setupBank(value);
   const [origin, setOrigin] = useState<string | undefined>();
   useEffect(() => setOrigin(window.location.origin), []);
+  const latest = useRef(value);
+  latest.current = value;
 
-  /** Reads the bank's own circular PDF through the same intake as an upload. */
-  async function loadBankPdf(key: BankKey) {
-    const b = bankByKey(key);
+  /** Reads one of the four circular PDFs through the same intake as an upload. */
+  async function loadPdf(bankKey: BankKey, pdfOf: Exclude<BankKey, "custom">) {
+    const b = bankByKey(pdfOf);
     setBusy(true);
     setErr(null);
-    onChange({ bank: key, source: "bank-pdf", ref: b.circular.ref, text: b.circular.text, intake: "Reading the PDF…" });
+    const base = { ...latest.current, bank: bankKey, source: "bank-pdf" as const, pdfOf, ref: b.circular.ref };
+    onChange({ ...base, text: b.circular.text, intake: "Reading the PDF…" });
     try {
       const blob = await (await fetch(b.circular.pdf)).blob();
       const name = b.circular.pdf.split("/").pop()!;
       const r = await extract(new File([blob], name, { type: "application/pdf" }));
-      onChange({ bank: key, source: "bank-pdf", ref: b.circular.ref, text: r.text, intake: `${name} · ${METHOD[r.method] ?? r.method}${r.pages ? ` · ${r.pages} page${r.pages > 1 ? "s" : ""}` : ""} · ${r.chars.toLocaleString()} characters` });
+      onChange({ ...base, text: r.text, intake: `${name} · ${METHOD[r.method] ?? r.method}${r.pages ? ` · ${r.pages} page${r.pages > 1 ? "s" : ""}` : ""} · ${r.chars.toLocaleString()} characters` });
     } catch (e) {
       setErr(`${(e as Error).message}. Using the circular's built-in text instead.`);
-      onChange({ bank: key, source: "bank-pdf", ref: b.circular.ref, text: b.circular.text, intake: "Built-in text" });
+      onChange({ ...base, text: b.circular.text, intake: "Built-in text" });
     } finally {
       setBusy(false);
     }
@@ -76,7 +149,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
-    void loadBankPdf(value.bank);
+    void loadPdf(value.bank, value.pdfOf ?? "ghi");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -86,7 +159,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
     try {
       const r = await extract(f);
       const fallback = f.name.replace(/\.[a-z0-9]+$/i, "");
-      onChange({ ...value, source: "upload", ref: refFrom(r.text, fallback), text: r.text, intake: `${f.name} · ${METHOD[r.method] ?? r.method}${r.pages ? ` · ${r.pages} page${r.pages > 1 ? "s" : ""}` : ""} · ${r.chars.toLocaleString()} characters${r.truncated ? " (first 20,000 kept)" : ""}` });
+      onChange({ ...latest.current, source: "upload", ref: refFrom(r.text, fallback), text: r.text, intake: `${f.name} · ${METHOD[r.method] ?? r.method}${r.pages ? ` · ${r.pages} page${r.pages > 1 ? "s" : ""}` : ""} · ${r.chars.toLocaleString()} characters${r.truncated ? " (first 20,000 kept)" : ""}` });
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -97,6 +170,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
 
   const tab = (active: boolean) => `cursor-pointer px-3 py-1.5 text-[13.5px] transition-colors disabled:cursor-not-allowed ${active ? "bg-ink text-white" : "bg-bg text-ink hover:bg-surface-2"}`;
   const site = bankSiteUrl(bank, origin);
+  const isCustom = value.bank === "custom";
 
   return (
     <div data-ui className="grid gap-6 xl:grid-cols-[1fr_1.15fr]">
@@ -113,7 +187,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
                 role="radio"
                 aria-checked={on}
                 disabled={disabled || busy}
-                onClick={() => !on && loadBankPdf(b.key)}
+                onClick={() => !on && loadPdf(b.key, b.key as Exclude<BankKey, "custom">)}
                 className={`cursor-pointer p-3 text-left transition-colors disabled:cursor-not-allowed ${on ? "bg-ink text-white" : "bg-bg text-ink hover:bg-surface-2"}`}
               >
                 <span className="flex items-center gap-2 text-[15px] font-semibold">
@@ -126,13 +200,26 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
               </button>
             );
           })}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={isCustom}
+            disabled={disabled || busy}
+            onClick={() => !isCustom && onChange({ ...value, bank: "custom" })}
+            className={`cursor-pointer p-3 text-left transition-colors disabled:cursor-not-allowed sm:col-span-2 ${isCustom ? "bg-ink text-white" : "bg-accent-soft text-accent hover:bg-[#d4e0fb]"}`}
+          >
+            <span className="text-[15px] font-semibold">+ Add your own bank</span>
+            <span className={`mt-0.5 block text-[12.5px] ${isCustom ? "text-white/75" : "text-accent"}`}>Your name, licence, capital, live rules and Board policy. Then run any circular on it.</span>
+          </button>
         </div>
+
+        {isCustom && <CustomForm value={value.custom} onChange={(c) => onChange({ ...value, custom: c })} disabled={disabled} />}
 
         <dl className="m-0 mt-4 grid grid-cols-3 gap-px bg-surface-2 text-[13px]">
           {[
             ["Tier 1 capital", `₹${bank.profile.tier1CapitalCr.toLocaleString("en-IN")} cr`],
-            ["State", bank.profile.state],
             ["Licence", bank.profile.entityType],
+            ["Type", bank.kind],
           ].map(([k, v]) => (
             <div key={k} className="bg-bg px-3 py-2">
               <dt className="text-muted">{k}</dt>
@@ -156,10 +243,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
         <ul className="m-0 mt-1 space-y-1 p-0">
           {bank.policies.map((p) => (
             <li key={p.id} className="list-none bg-bg px-3 py-2 text-[14px] leading-snug text-ink">
-              <b>
-                {p.policy.split(" ")[0]} §{p.section}
-              </b>{" "}
-              {p.text}
+              <b>§{p.section}</b> {p.text}
             </li>
           ))}
         </ul>
@@ -172,9 +256,29 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
       <div className="flex flex-col bg-surface p-5">
         <p className="text-[17px] font-semibold text-ink">2 · The circular it just received</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" disabled={disabled || busy} onClick={() => loadBankPdf(bank.key)} className={tab(value.source === "bank-pdf")}>
-            {bank.short}&apos;s circular (PDF)
-          </button>
+          {isCustom ? (
+            <label className={`${tab(value.source === "bank-pdf")} flex items-center gap-2`}>
+              Sample PDF
+              <select
+                value={value.source === "bank-pdf" ? value.pdfOf : ""}
+                disabled={disabled || busy}
+                onChange={(e) => e.target.value && loadPdf("custom", e.target.value as Exclude<BankKey, "custom">)}
+                className="bg-transparent text-[13px] outline-none"
+                aria-label="Sample circular PDF"
+              >
+                <option value="">Choose…</option>
+                {PRESET.map((k) => (
+                  <option key={k} value={k} className="text-ink">
+                    {bankByKey(k).circular.ref}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <button type="button" disabled={disabled || busy} onClick={() => loadPdf(value.bank, value.bank as Exclude<BankKey, "custom">)} className={tab(value.source === "bank-pdf")}>
+              {bank.short}&apos;s circular (PDF)
+            </button>
+          )}
           <button type="button" disabled={disabled || busy} onClick={() => file.current?.click()} className={tab(value.source === "upload")}>
             Upload PDF, Word or text
           </button>
@@ -184,11 +288,9 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
           <input ref={file} type="file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[13px]">
-          <span className="text-muted">
-            {busy ? <span className="pulse text-accent">Reading the document…</span> : value.intake}
-          </span>
-          {value.source === "bank-pdf" && (
-            <a href={bank.circular.pdf} target="_blank" rel="noreferrer" className="link text-accent">
+          <span className="text-muted">{busy ? <span className="pulse text-accent">Reading the document…</span> : value.intake}</span>
+          {value.source === "bank-pdf" && value.pdfOf && (
+            <a href={bankByKey(value.pdfOf).circular.pdf} target="_blank" rel="noreferrer" className="link text-accent">
               View the PDF ↗
             </a>
           )}
@@ -206,7 +308,7 @@ export function RunSetup({ value, onChange, disabled }: { value: SetupValue; onC
           value={value.text}
           disabled={disabled || busy}
           placeholder="Paste a circular here. Numbered paragraphs (1., 2., (a), (b)) work best."
-          onChange={(e) => onChange({ ...value, source: value.source === "bank-pdf" ? "paste" : value.source, ref: value.source === "bank-pdf" ? refFrom(e.target.value, "CIRC-EDITED-001") : refFrom(e.target.value, value.ref), text: e.target.value.slice(0, 20_000), intake: value.source === "upload" ? value.intake : "Edited text" })}
+          onChange={(e) => onChange({ ...value, source: value.source === "bank-pdf" ? "paste" : value.source, ref: refFrom(e.target.value, value.source === "bank-pdf" ? "CIRC-EDITED-001" : value.ref), text: e.target.value.slice(0, 20_000), intake: value.source === "upload" ? value.intake : "Edited text" })}
           className="code mt-3 min-h-[300px] w-full flex-1 resize-y bg-bg p-3 text-[12.5px] leading-[1.55] text-ink outline-none focus:bg-white"
         />
         <p className="mt-2 flex justify-between text-[12px] text-muted">

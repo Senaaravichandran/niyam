@@ -230,6 +230,35 @@ export default function SolutionPage() {
           </div>
         </Section>
 
+        <Section id="modes" title="Two modes, the same safety" intro="The console runs every circular either way. Only the Extractor and the Author change; everything after them is the same code.">
+          <div className="overflow-x-auto" data-reveal>
+            <table className="ui w-full min-w-[720px] border-collapse text-[15px]">
+              <thead>
+                <tr className="text-left text-[13px] text-muted">
+                  <th className="px-4 py-2 font-normal" />
+                  <th className="px-4 py-2 font-normal">Rule-based</th>
+                  <th className="px-4 py-2 font-normal">Claude live</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["What it uses", "Comparator rules (“exceeding” is >, “or more” is >=, “not less than” is a floor), number patterns and a typed rule template", "Claude for the Extractor and Author, asked for structured output that matches NIYAM's schema"],
+                  ["How it works", "Each binding clause is matched against the rules; the rule file is filled from the obligation", "Claude proposes obligations and drafts rule files; NIYAM keeps an obligation only if its quote appears word for word, and a rule only if it passes schema, compiler, tests and the Validator"],
+                  ["Why use it", "Same input, same output, no cost: ideal for audits and repeat runs", "Reads wording no fixed rule set has seen, in new circulars and unusual phrasing"],
+                  ["Cost of a run", "Nothing", "About $0.03 to $0.05 (four calls), shown live in the console"],
+                  ["Same in both", "Mapping, tests, backtest, two-person approval, shadow, canary, live, Sentinel and the Golden Thread", "Mapping, tests, backtest, two-person approval, shadow, canary, live, Sentinel and the Golden Thread"],
+                ].map(([k, a, b]) => (
+                  <tr key={k} className="odd:bg-surface align-top">
+                    <td className="px-4 py-3 font-semibold text-ink">{k}</td>
+                    <td className="px-4 py-3 text-ink">{a}</td>
+                    <td className="px-4 py-3 text-ink">{b}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
         <Section id="rollout" title="Can AI change a live banking rule by itself? No." tone="surface" intro="NIYAM never lets an agent change production directly. A new rule earns its way in through three stages, after two humans sign.">
           <div className="grid gap-3 lg:grid-cols-3">
             <Card title="1 · Shadow" tag="Observe · days 1-3" tone="plain">
