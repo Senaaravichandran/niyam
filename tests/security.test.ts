@@ -28,6 +28,7 @@ describe("security regressions from the audit", () => {
     const db = await getBookDb();
     expect(() => runQuery(db, "SELECT 1; DELETE FROM capital")).toThrow(/single SQL statement/);
     expect(() => runQuery(db, "DELETE FROM capital")).toThrow(/must be a SELECT/);
+    expect(runQuery(db, "-- generated rule query\nWITH sample AS (SELECT 1 AS value) SELECT value FROM sample")).toEqual([{ value: 1 }]);
     const rule = parseRule('rule_id: SYN-EXP-012\nversion: 2\nstatus: draft\ntitle: Group exposure\napplies_to: [UCB]\nwhen:\n  metric: group_exposure_pct_tier1\n  op: ">"\n  value: 12\n  unit: pct\naction: flag_for_report\nseverity: high\nsource:\n  circular: RBI-SYN-2026-017\n  clause: "4(b)"\n  span: aggregate exposure exceeding 12 per cent\n');
     expect(runQuery(db, compileRule(rule).sql).length).toBeGreaterThan(0);
   });
