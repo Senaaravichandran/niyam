@@ -93,7 +93,9 @@ export async function readJson<T>(req: Request, max: number): Promise<{ ok: true
   const len = Number(req.headers.get("content-length") ?? "0");
   if (len > max) return { ok: false, res: Response.json({ error: "Payload too large" }, { status: 413 }) };
   const text = await req.text();
-  if (text.length > max) return { ok: false, res: Response.json({ error: "Payload too large" }, { status: 413 }) };
+  if (new TextEncoder().encode(text).byteLength > max) {
+    return { ok: false, res: Response.json({ error: "Payload too large" }, { status: 413 }) };
+  }
   try {
     return { ok: true, value: (text ? JSON.parse(text) : {}) as T };
   } catch {
