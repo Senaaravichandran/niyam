@@ -19,6 +19,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Research",
     links: [
       { href: "/research", label: "Research and sources" },
+      { href: "/prd", label: "Product requirements (PRD)" },
       { href: "/jatayu", label: "Jatayu submission" },
       { href: REPO_URL, label: "Source on GitHub" },
     ],
